@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:love_debate/features/match.dart';
+import 'package:love_debate/features/match/match_page.dart';
 import 'package:love_debate/widgets/primary_button.dart';
 
 class ListPage extends StatelessWidget {

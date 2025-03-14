@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:love_debate/features/create/create_page.dart';
 import 'dart:math' as math;
 import 'dart:math';
 
@@ -68,6 +69,12 @@ class _MatchPageState extends State<MatchPage> with TickerProviderStateMixin {
           matchSuccess = true;
         });
         _successController.forward();
+
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            _navigateToCreatePage();
+          }
+        });
       }
     });
   }
@@ -81,6 +88,14 @@ class _MatchPageState extends State<MatchPage> with TickerProviderStateMixin {
     _progressController.dispose();
     _particleController.dispose();
     super.dispose();
+  }
+
+  // 匹配成功后自动跳转到 create_page
+  void _navigateToCreatePage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CreatePage()),
+    );
   }
 
   @override
@@ -319,7 +334,7 @@ class ParticlesPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final int particleCount = 20;
+    const int particleCount = 20;
 
     for (int i = 0; i < particleCount; i++) {
       final double offsetX = random.nextDouble() * size.width;
