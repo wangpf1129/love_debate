@@ -1,6 +1,6 @@
 // 对战记录列表
 import 'package:love_debate/api/http_server.dart';
-import 'package:love_debate/models/debate.dart';
+import 'package:love_debate/models/index.dart';
 import 'dart:convert';
 
 class BattleRecordListApi {
@@ -24,8 +24,6 @@ class BattleRecordListApi {
         throw Exception(listResponse.info);
       }
     } catch (e) {
-      print('解析数据失败：$e');
-      print('错误堆栈：${StackTrace.current}');
       rethrow;
     }
   }

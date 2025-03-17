@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:love_debate/api/base_api.dart';
+import 'package:love_debate/api/api_server.dart';
 import 'package:love_debate/features/match/match_page.dart';
-import 'package:love_debate/models/debate.dart';
+import 'package:love_debate/models/index.dart';
 import 'package:love_debate/widgets/primary_button.dart';
 
 class ListPage extends StatefulWidget {

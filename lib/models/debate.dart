@@ -1,253 +1,98 @@
-class BaseResponse<T> {
-  final int code;
-  final String info;
-  final T data;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  BaseResponse({
-    required this.code,
-    required this.info,
-    required this.data,
-  });
+part 'debate.freezed.dart';
+part 'debate.g.dart';
 
-  factory BaseResponse.fromJson(
-    Map<String, dynamic> json,
-    T Function(dynamic json) fromJson,
-  ) {
-    return BaseResponse<T>(
-      code: json['code'],
-      info: json['info'],
-      data: fromJson(json['data']),
-    );
-  }
+@freezed
+sealed class Bot with _$Bot {
+  const factory Bot({
+    @JsonKey(name: 'bot_id') required String botId,
+    @JsonKey(name: 'bot_name') required String botName,
+    @JsonKey(name: 'bot_avatar') required String botAvatar,
+    @JsonKey(name: 'bot_description') required String botDescription,
+  }) = _Bot;
+
+  factory Bot.fromJson(Map<String, dynamic> json) => _$BotFromJson(json);
 }
 
-class ListResponse<T> {
-  final int code;
-  final String info;
-  final List<T> data;
-  final int count;
-  final bool next;
-  final bool previous;
+@freezed
+sealed class Judge with _$Judge {
+  const factory Judge({
+    @JsonKey(name: 'bot_id') required String botId,
+    @JsonKey(name: 'bot_name') required String botName,
+    @JsonKey(name: 'bot_avatar') required String botAvatar,
+    @JsonKey(name: 'bot_description') required String botDescription,
+    required String content,
+  }) = _Judge;
 
-  ListResponse({
-    required this.code,
-    required this.info,
-    required this.data,
-    required this.count,
-    required this.next,
-    required this.previous,
-  });
-
-  factory ListResponse.fromJson(
-    Map<String, dynamic> json,
-    T Function(dynamic json) fromJson,
-  ) {
-    return ListResponse<T>(
-      code: json['code'],
-      info: json['info'],
-      data: (json['data'] as List).map(fromJson).toList(),
-      count: json['count'],
-      next: json['next'],
-      previous: json['previous'],
-    );
-  }
+  factory Judge.fromJson(Map<String, dynamic> json) => _$JudgeFromJson(json);
 }
 
-class Bot {
-  final String botId;
-  final String botName;
-  final String botAvatar;
-  final String botDescription;
+@freezed
+sealed class Debater with _$Debater {
+  @JsonSerializable(createToJson: true)
+  const factory Debater({
+    required String id,
+    String? avatar,
+    required String nickname,
+    @JsonKey(name: 'user_id') required String userId,
+    required String standpoint,
+    @JsonKey(name: 'standpoint_view') required String standpointView,
+    @JsonKey(name: 'is_winner') required int isWinner,
+    @JsonKey(name: 'is_escape') required int isEscape,
+    @JsonKey(name: 'created_at') required String createdAt,
+    @JsonKey(name: 'is_ready') required int isReady,
+    @Default([]) List<Bot> bots,
+  }) = _Debater;
 
-  Bot({
-    required this.botId,
-    required this.botName,
-    required this.botAvatar,
-    required this.botDescription,
-  });
-
-  factory Bot.fromJson(Map<String, dynamic> json) {
-    return Bot(
-      botId: json['bot_id'],
-      botName: json['bot_name'],
-      botAvatar: json['bot_avatar'],
-      botDescription: json['bot_description'],
-    );
-  }
+  factory Debater.fromJson(Map<String, dynamic> json) =>
+      _$DebaterFromJson(json);
 }
 
-class Judge extends Bot {
-  final String content;
+@freezed
+sealed class DebateItem with _$DebateItem {
+  @JsonSerializable(createToJson: true)
+  const factory DebateItem({
+    required String id,
+    @JsonKey(name: 'theme_id') required String themeId,
+    @JsonKey(name: 'theme_title') required String themeTitle,
+    required String state,
+    @JsonKey(name: 'created_at') required String createdAt,
+    @JsonKey(name: 'winner_user_id') required String winnerUserId,
+    required int rounds,
+    required List<Judge> judges,
+    required Debater opponent,
+    required Debater my,
+    @JsonKey(name: 'pros_energies') required int prosEnergies,
+    @JsonKey(name: 'cons_energies') required int consEnergies,
+    @JsonKey(name: 'result_text') required String resultText,
+    required String result,
+  }) = _DebateItem;
 
-  Judge({
-    required super.botId,
-    required super.botName,
-    required super.botAvatar,
-    required super.botDescription,
-    required this.content,
-  });
-
-  factory Judge.fromJson(Map<String, dynamic> json) {
-    return Judge(
-      botId: json['bot_id'],
-      botName: json['bot_name'],
-      botAvatar: json['bot_avatar'],
-      botDescription: json['bot_description'],
-      content: json['content'],
-    );
-  }
+  factory DebateItem.fromJson(Map<String, dynamic> json) =>
+      _$DebateItemFromJson(json);
 }
 
-class Debater {
-  final String id;
-  final String? avatar;
-  final String nickname;
-  final String userId;
-  final String standpoint;
-  final String standpointView;
-  final int isWinner;
-  final int isEscape;
-  final String createdAt;
-  final int isReady;
-  final List<Bot> bots;
+@freezed
+sealed class DebateRecord with _$DebateRecord {
+  @JsonSerializable(createToJson: true)
+  const factory DebateRecord({
+    required String id,
+    @JsonKey(name: 'theme_id') required String themeId,
+    @JsonKey(name: 'theme_title') required String themeTitle,
+    required String state,
+    @JsonKey(name: 'created_at') required String createdAt,
+    @JsonKey(name: 'winner_user_id') String? winnerUserId,
+    required int rounds,
+    @Default([]) List<Judge> judges,
+    required Debater opponent,
+    required Debater my,
+    @JsonKey(name: 'pros_energies') required int prosEnergies,
+    @JsonKey(name: 'cons_energies') required int consEnergies,
+    @JsonKey(name: 'result_text') String? resultText,
+    required String result,
+  }) = _DebateRecord;
 
-  Debater({
-    required this.id,
-    this.avatar,
-    required this.nickname,
-    required this.userId,
-    required this.standpoint,
-    required this.standpointView,
-    required this.isWinner,
-    required this.isEscape,
-    required this.createdAt,
-    required this.isReady,
-    List<Bot>? bots,
-  }) : bots = bots ?? [];
-
-  factory Debater.fromJson(Map<String, dynamic> json) {
-    return Debater(
-      id: json['id'],
-      avatar: json['avatar'],
-      nickname: json['nickname'],
-      userId: json['user_id'],
-      standpoint: json['standpoint'],
-      standpointView: json['standpoint_view'],
-      isWinner: json['is_winner'],
-      isEscape: json['is_escape'],
-      createdAt: json['created_at'],
-      isReady: json['is_ready'],
-      bots: json['bots'] != null
-          ? (json['bots'] as List).map((b) => Bot.fromJson(b)).toList()
-          : [],
-    );
-  }
-}
-
-class DebateItem {
-  final String id;
-  final String themeId;
-  final String themeTitle;
-  final String state;
-  final String createdAt;
-  final String winnerUserId;
-  final int rounds;
-  final List<Judge> judges;
-  final Debater opponent;
-  final Debater my;
-  final int prosEnergies;
-  final int consEnergies;
-  final String resultText;
-  final String result;
-
-  DebateItem({
-    required this.id,
-    required this.themeId,
-    required this.themeTitle,
-    required this.state,
-    required this.createdAt,
-    required this.winnerUserId,
-    required this.rounds,
-    required this.judges,
-    required this.opponent,
-    required this.my,
-    required this.prosEnergies,
-    required this.consEnergies,
-    required this.resultText,
-    required this.result,
-  });
-
-  factory DebateItem.fromJson(Map<String, dynamic> json) {
-    return DebateItem(
-      id: json['id'],
-      themeId: json['theme_id'],
-      themeTitle: json['theme_title'],
-      state: json['state'],
-      createdAt: json['created_at'],
-      winnerUserId: json['winner_user_id'],
-      rounds: json['rounds'],
-      judges: json['judges'],
-      opponent: json['opponent'],
-      my: json['my'],
-      prosEnergies: json['pros_energies'],
-      consEnergies: json['cons_energies'],
-      resultText: json['result_text'],
-      result: json['result'],
-    );
-  }
-}
-
-class DebateRecord {
-  final String id;
-  final String themeId;
-  final String themeTitle;
-  final String state;
-  final String createdAt;
-  final String? winnerUserId;
-  final int rounds;
-  final List<Judge> judges;
-  final Debater opponent;
-  final Debater my;
-  final int prosEnergies;
-  final int consEnergies;
-  final String? resultText;
-  final String result;
-
-  DebateRecord({
-    required this.id,
-    required this.themeId,
-    required this.themeTitle,
-    required this.state,
-    required this.createdAt,
-    this.winnerUserId,
-    required this.rounds,
-    List<Judge>? judges,
-    required this.opponent,
-    required this.my,
-    required this.prosEnergies,
-    required this.consEnergies,
-    this.resultText,
-    required this.result,
-  }) : judges = judges ?? [];
-
-  factory DebateRecord.fromJson(Map<String, dynamic> json) {
-    return DebateRecord(
-      id: json['id'],
-      themeId: json['theme_id'],
-      themeTitle: json['theme_title'],
-      state: json['state'],
-      createdAt: json['created_at'],
-      winnerUserId: json['winner_user_id'],
-      rounds: json['rounds'],
-      judges: json['judges'] != null
-          ? (json['judges'] as List).map((j) => Judge.fromJson(j)).toList()
-          : [],
-      opponent: Debater.fromJson(json['opponent']),
-      my: Debater.fromJson(json['my']),
-      prosEnergies: json['pros_energies'],
-      consEnergies: json['cons_energies'],
-      resultText: json['result_text'],
-      result: json['result'],
-    );
-  }
+  factory DebateRecord.fromJson(Map<String, dynamic> json) =>
+      _$DebateRecordFromJson(json);
 }
