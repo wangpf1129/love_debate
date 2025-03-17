@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:love_debate/api/api_server.dart';
+import 'package:love_debate/api/http_server.dart';
 import 'package:love_debate/features/match/match_page.dart';
 import 'package:love_debate/models/index.dart';
 import 'package:love_debate/widgets/primary_button.dart';
@@ -14,7 +16,6 @@ class ListPage extends StatefulWidget {
 class _ListPageState extends State<ListPage> {
   List<DebateRecord> _records = [];
   bool isLoading = false;
-  String? error;
 
   @override
   void initState() {
@@ -26,18 +27,32 @@ class _ListPageState extends State<ListPage> {
   Future<void> _fetchRecords() async {
     setState(() {
       isLoading = true;
-      error = null;
     });
 
     try {
-      final data = await BattleRecordListApi.getBattleRecordList();
+      final data = await ApiServer.getBattleRecordList();
       setState(() {
-        _records = data;
+        _records = data.data;
         isLoading = false;
       });
     } catch (e) {
+      String errorMessage;
+      if (e is BusinessException) {
+        // 处理业务错误
+        errorMessage = e.message; // 直接使用后端返回的 info
+      } else {
+        // 处理 HTTP 错误或其他错误
+        errorMessage = e.toString();
+      }
+      Fluttertoast.showToast(
+          msg: errorMessage,
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 3,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0);
       setState(() {
-        error = e.toString();
         isLoading = false;
       });
     }

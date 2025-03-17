@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+import 'dart:convert'; // 添加这个导入
 
 class HttpServer {
   late Dio _dio;
@@ -37,7 +38,45 @@ class HttpServer {
         return handler.next(options);
       },
       onResponse: (response, handler) {
-        return handler.next(response);
+        try {
+          // 确保我们有响应数据
+          if (response.data == null) {
+            return handler.reject(
+              DioException(
+                requestOptions: response.requestOptions,
+                error: "响应数据为空",
+              ),
+            );
+          }
+          // 将字符串解析为 Map
+          final Map<String, dynamic> responseData = response.data is String
+              ? jsonDecode(response.data)
+              : response.data;
+
+          final code = responseData['code'] as int;
+          final info = responseData['info'] as String;
+
+          if (code >= 200 && code < 300) {
+            return handler.next(response);
+          } else {
+            return handler.reject(
+              DioException(
+                requestOptions: response.requestOptions,
+                error: BusinessException(
+                  code: code,
+                  message: info,
+                ),
+              ),
+            );
+          }
+        } catch (e) {
+          return handler.reject(
+            DioException(
+              requestOptions: response.requestOptions,
+              error: "响应处理错误: ${e.toString()}",
+            ),
+          );
+        }
       },
       onError: (DioException error, handler) {
         return handler.next(error);
@@ -47,28 +86,93 @@ class HttpServer {
   // 获取dio实例
   Dio get dioInstance => _dio;
 
-  // GET请求
-  Future<Response> get(
-    String path, {
+  // 封装请求方法
+  Future<Map<String, dynamic>> _request(
+    String path,
+    String method, {
+    dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
     CancelToken? cancelToken,
+    ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
     try {
-      final response = await _dio.get(path,
-          queryParameters: queryParameters,
-          options: options,
-          cancelToken: cancelToken,
-          onReceiveProgress: onReceiveProgress);
-      return response;
+      late Response response;
+
+      switch (method.toUpperCase()) {
+        case 'GET':
+          response = await _dio.get(
+            path,
+            queryParameters: queryParameters,
+            options: options,
+            cancelToken: cancelToken,
+            onReceiveProgress: onReceiveProgress,
+          );
+          break;
+        case 'POST':
+          response = await _dio.post(
+            path,
+            data: data,
+            queryParameters: queryParameters,
+            options: options,
+            cancelToken: cancelToken,
+            onSendProgress: onSendProgress,
+            onReceiveProgress: onReceiveProgress,
+          );
+          break;
+        case 'PUT':
+          response = await _dio.put(
+            path,
+            data: data,
+            queryParameters: queryParameters,
+            options: options,
+            cancelToken: cancelToken,
+            onSendProgress: onSendProgress,
+            onReceiveProgress: onReceiveProgress,
+          );
+          break;
+        case 'DELETE':
+          response = await _dio.delete(
+            path,
+            data: data,
+            queryParameters: queryParameters,
+            options: options,
+            cancelToken: cancelToken,
+          );
+          break;
+        default:
+          throw Exception('Unsupported method: $method');
+      }
+
+      // 统一处理响应数据转换
+      return response.data is String
+          ? jsonDecode(response.data)
+          : response.data;
     } on DioException catch (error) {
       throw _handleError(error);
     }
   }
 
-  //POST请求
-  Future<Response> post(
+  // 对外暴露的方法都变得非常简洁
+  Future<Map<String, dynamic>> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    return _request(
+      path,
+      'GET',
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+      onReceiveProgress: onReceiveProgress,
+    );
+  }
+
+  Future<Map<String, dynamic>> post(
     String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
@@ -77,24 +181,19 @@ class HttpServer {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    try {
-      final response = await _dio.post(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-        cancelToken: cancelToken,
-        onSendProgress: onSendProgress,
-        onReceiveProgress: onReceiveProgress,
-      );
-      return response;
-    } catch (e) {
-      throw _handleError(e);
-    }
+    return _request(
+      path,
+      'POST',
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
   }
 
-  // PUT请求
-  Future<Response> put(
+  Future<Map<String, dynamic>> put(
     String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
@@ -103,84 +202,64 @@ class HttpServer {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    try {
-      final response = await _dio.put(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-        cancelToken: cancelToken,
-        onSendProgress: onSendProgress,
-        onReceiveProgress: onReceiveProgress,
-      );
-      return response;
-    } catch (e) {
-      throw _handleError(e);
-    }
+    return _request(
+      path,
+      'PUT',
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
   }
 
-  // DELETE请求
-  Future<Response> delete(
+  Future<Map<String, dynamic>> delete(
     String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
     CancelToken? cancelToken,
   }) async {
-    try {
-      final response = await _dio.delete(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-        cancelToken: cancelToken,
-      );
-      return response;
-    } catch (e) {
-      throw _handleError(e);
-    }
+    return _request(
+      path,
+      'DELETE',
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+    );
   }
 
   Exception _handleError(dynamic error) {
-    String errorMessage = "发生错误，请稍后再试";
-
     if (error is DioException) {
+      if (error.error is BusinessException) {
+        // 业务错误，直接返回
+        return error.error as BusinessException;
+      }
+
+      // 处理其他 Dio 错误
       switch (error.type) {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.sendTimeout:
         case DioExceptionType.receiveTimeout:
-          errorMessage = "网络请求超时，请稍后再试";
-          break;
-        case DioExceptionType.badResponse:
-          errorMessage = _handleResponseError(error.response);
-          break;
+          return Exception("网络请求超时，请稍后再试");
         case DioExceptionType.connectionError:
-          errorMessage = "网络连接错误，请检查网络状态";
-          break;
+          return Exception("网络连接错误，请检查网络状态");
         default:
-          errorMessage = "未知错误，请稍后再试";
+          return Exception(error.error?.toString() ?? "未知错误");
       }
     }
-    return DioException(
-      requestOptions: error.requestOptions,
-      error: errorMessage,
-    );
+    return Exception("未知错误");
   }
+}
 
-// 处理错误响应
-  String _handleResponseError(Response? response) {
-    String errorMessage = "发生错误，请稍后再试";
+class BusinessException implements Exception {
+  final int code;
+  final String message;
 
-    if (response != null) {
-      try {
-        if (response.data != null && response.data is Map) {
-          errorMessage = response.data['message'] ?? errorMessage;
-        }
-      } catch (e) {
-        errorMessage = "响应解析错误";
-      }
-    }
+  BusinessException({required this.code, required this.message});
 
-    return errorMessage;
-  }
+  @override
+  String toString() => message;
 }
