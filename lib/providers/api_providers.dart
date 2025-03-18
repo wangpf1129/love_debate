@@ -16,3 +16,15 @@ Future<List<DebateRecord>> fetchDebateRecords(Ref ref) async {
   );
   return listResponse.data;
 }
+
+// ai搜索列表
+@riverpod
+Future<List<Bot>> fetchBots(Ref ref) async {
+  final response = await HttpServer().get('/bots/search');
+
+  final listResponse = ListResponse<Bot>.fromJson(
+    response,
+    (json) => Bot.fromJson(json as Map<String, dynamic>),
+  );
+  return listResponse.data;
+}
