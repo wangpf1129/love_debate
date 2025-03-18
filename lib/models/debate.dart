@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:love_debate/models/enums.dart';
 
 part 'debate.freezed.dart';
 part 'debate.g.dart';
@@ -36,7 +37,7 @@ sealed class Debater with _$Debater {
     String? avatar,
     required String nickname,
     @JsonKey(name: 'user_id') required String userId,
-    required String standpoint,
+    @JsonKey(name: 'standpoint') required DebateStandpoint standpoint,
     @JsonKey(name: 'standpoint_view') required String standpointView,
     @JsonKey(name: 'is_winner') required int isWinner,
     @JsonKey(name: 'is_escape') required int isEscape,
@@ -56,7 +57,7 @@ sealed class DebateItem with _$DebateItem {
     required String id,
     @JsonKey(name: 'theme_id') required String themeId,
     @JsonKey(name: 'theme_title') required String themeTitle,
-    required String state,
+    @JsonKey(name: 'state') required DebateState state,
     @JsonKey(name: 'created_at') required String createdAt,
     @JsonKey(name: 'winner_user_id') required String winnerUserId,
     required int rounds,
@@ -80,7 +81,7 @@ sealed class DebateRecord with _$DebateRecord {
     required String id,
     @JsonKey(name: 'theme_id') required String themeId,
     @JsonKey(name: 'theme_title') required String themeTitle,
-    required String state,
+    @JsonKey(name: 'state') required DebateState state,
     @JsonKey(name: 'created_at') required String createdAt,
     @JsonKey(name: 'winner_user_id') String? winnerUserId,
     required int rounds,
@@ -90,7 +91,7 @@ sealed class DebateRecord with _$DebateRecord {
     @JsonKey(name: 'pros_energies') required int prosEnergies,
     @JsonKey(name: 'cons_energies') required int consEnergies,
     @JsonKey(name: 'result_text') String? resultText,
-    required String result,
+    @JsonKey(name: 'result') required DebateResult result,
   }) = _DebateRecord;
 
   factory DebateRecord.fromJson(Map<String, dynamic> json) =>
