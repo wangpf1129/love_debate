@@ -5,18 +5,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'api_providers.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<List<DebateRecord>> fetchDebateRecords(Ref ref) async {
-  try {
-    final response = await HttpServer().get('/fight');
+  final response = await HttpServer().get('/fight');
 
-    // 解析响应并直接返回数据
-    final listResponse = ListResponse<DebateRecord>.fromJson(
-      response,
-      (json) => DebateRecord.fromJson(json as Map<String, dynamic>),
-    );
-    return listResponse.data;
-  } catch (e) {
-    rethrow;
-  }
+  // 解析响应并直接返回数据
+  final listResponse = ListResponse<DebateRecord>.fromJson(
+    response,
+    (json) => DebateRecord.fromJson(json as Map<String, dynamic>),
+  );
+  return listResponse.data;
 }
