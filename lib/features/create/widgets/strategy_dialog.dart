@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:love_debate/widgets/primary_button.dart';
 
-class StrategyDialog extends StatefulWidget {
+class StrategyDialog extends HookWidget {
   final String? initialStrategy;
   final Function(String) onStrategyChanged;
 
@@ -11,30 +13,9 @@ class StrategyDialog extends StatefulWidget {
       required this.onStrategyChanged});
 
   @override
-  State<StrategyDialog> createState() => _StrategyDialogState();
-}
-
-class _StrategyDialogState extends State<StrategyDialog> {
-  late TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialStrategy ?? '');
-
-    _controller.addListener(() {
-      widget.onStrategyChanged(_controller.text);
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final textController =
+        useTextEditingController(text: initialStrategy ?? "");
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -64,7 +45,7 @@ class _StrategyDialogState extends State<StrategyDialog> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: TextField(
-                    controller: _controller,
+                    controller: textController,
                     keyboardType: TextInputType.multiline,
                     maxLines: 10,
                     // 底部有白色边框给移除掉
@@ -72,6 +53,24 @@ class _StrategyDialogState extends State<StrategyDialog> {
                       border: InputBorder.none,
                     ),
                   )),
+              const SizedBox(
+                height: 22,
+              ),
+              PrimaryButton(
+                text: '确定',
+                onPressed: () {
+                  if (textController.text.isEmpty) {
+                    // toast
+                    Fluttertoast.showToast(
+                      msg: '请输入辩论策略',
+                      gravity: ToastGravity.CENTER,
+                    );
+                    return;
+                  }
+                  onStrategyChanged(textController.text);
+                  Navigator.of(context).pop();
+                },
+              ),
             ],
           ),
         ),
@@ -97,12 +96,6 @@ class _StrategyDialogState extends State<StrategyDialog> {
             ),
           ),
         ),
-        Positioned(
-          bottom: -80,
-          left: 0,
-          right: 0,
-          child: PrimaryButton(text: '确定', onPressed: () {}),
-        )
       ]),
     );
   }

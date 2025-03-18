@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:love_debate/features/create/widgets/strategy_dialog.dart';
 import 'package:love_debate/widgets/custom_app_bar.dart';
 import 'package:love_debate/widgets/primary_button.dart';
 
-class CreatePage extends StatelessWidget {
+class CreatePage extends HookWidget {
   const CreatePage({super.key});
 
-  void _showDialog(BuildContext context) {
+  void _showDialog(BuildContext context, ValueNotifier<String> strategyState) {
     showDialog(
       context: context,
       builder: (context) {
         return StrategyDialog(
-          initialStrategy: '',
+          initialStrategy: strategyState.value,
           onStrategyChanged: (strategy) {
-            print('===== 策略内容 =====');
-            print(strategy);
-            print('===================');
+            strategyState.value = strategy;
+            print('===== 状态已更新 =====');
+            print('更新后的值: ${strategyState.value}');
+            print('=====================');
           },
         );
       },
@@ -24,6 +26,8 @@ class CreatePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strategyState = useState('');
+
     return Scaffold(
       appBar: CustomAppBar(onBackPressed: () {
         Navigator.pop(context);
@@ -72,7 +76,6 @@ class CreatePage extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 55, vertical: 10),
                 decoration: BoxDecoration(
-                  // color: const Color(0xFF9261A9).withAlpha(15),
                   gradient: LinearGradient(
                     colors: [
                       const Color(0xFF9261A9).withAlpha(25),
@@ -231,7 +234,7 @@ class CreatePage extends StatelessWidget {
                           ),
                           child: MaterialButton(
                             onPressed: () {
-                              _showDialog(context);
+                              _showDialog(context, strategyState);
                             },
                             child: const Text(
                               '设置辩论策略（进阶）',
