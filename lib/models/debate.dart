@@ -32,7 +32,7 @@ sealed class Judge with _$Judge {
     @JsonKey(name: 'bot_name') required String botName,
     @JsonKey(name: 'bot_avatar') required String botAvatar,
     @JsonKey(name: 'bot_description') required String botDescription,
-    required String content,
+    String? content,
   }) = _Judge;
 
   factory Judge.fromJson(Map<String, dynamic> json) => _$JudgeFromJson(json);
@@ -105,4 +105,22 @@ sealed class DebateRecord with _$DebateRecord {
 
   factory DebateRecord.fromJson(Map<String, dynamic> json) =>
       _$DebateRecordFromJson(json);
+}
+
+@freezed
+sealed class MatchDebate with _$MatchDebate {
+  const factory MatchDebate({
+    required String id,
+    @JsonKey(name: 'theme_id') required String themeId,
+    @JsonKey(name: 'theme_title') required String themeTitle,
+    @JsonKey(name: 'state') required DebateState state,
+    @JsonKey(name: 'created_at') required String createdAt,
+    @JsonKey(name: 'finished_at') String? finishedAt,
+    @JsonKey(name: 'standpoint') required DebateStandpoint standpoint,
+    @JsonKey(name: 'standpoint_view') required String standpointView,
+    required List<Judge> judges,
+  }) = _MatchDebate;
+
+  factory MatchDebate.fromJson(Map<String, dynamic> json) =>
+      _$MatchDebateFromJson(json);
 }

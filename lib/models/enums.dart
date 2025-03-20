@@ -31,3 +31,10 @@ enum DebateStandpoint {
   @JsonValue('cons')
   cons; // 反方
 }
+
+enum MatchDebateResult {
+  @JsonValue('success')
+  success, // 匹配成功
+  @JsonValue('failed')
+  failed, // 匹配失败
+}

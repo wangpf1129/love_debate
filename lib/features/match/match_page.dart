@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:love_debate/features/create/create_page.dart';
+import 'package:love_debate/features/match/widgets/painter.dart';
+import 'package:love_debate/models/enums.dart';
+import 'package:love_debate/providers/api_providers.dart';
 import 'dart:math' as math;
-import 'dart:math';
 
 import 'package:love_debate/widgets/custom_app_bar.dart';
 
-class MatchPage extends HookWidget {
+class MatchPage extends HookConsumerWidget {
   const MatchPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // 使用hooks创建动画控制器
     final spinController = useAnimationController(
       duration: const Duration(seconds: 8),
@@ -37,7 +40,8 @@ class MatchPage extends HookWidget {
     )..repeat();
 
     // 使用useState代替状态变量
-    final matchSuccess = useState(false);
+    final matchResult = useState<MatchDebateResult?>(null);
+    final matchLoading = useState(false);
 
     // 导航到创建页面的函数
     void navigateToCreatePage() {
@@ -47,23 +51,39 @@ class MatchPage extends HookWidget {
       );
     }
 
+    final matchResultAsync = ref.watch(matchDebateProvider);
+
     // 使用useEffect处理副作用，类似于componentDidMount和componentWillUnmount
     useEffect(() {
-      // 模拟5秒后匹配成功
-      final timer = Future.delayed(const Duration(seconds: 5), () {
-        matchSuccess.value = true;
-        successController.forward();
+      matchResultAsync.when(
+        data: (data) {
+          matchResult.value = MatchDebateResult.success;
+          successController.forward();
 
-        Future.delayed(const Duration(seconds: 1), () {
-          navigateToCreatePage();
-        });
-      });
+          Future.delayed(const Duration(seconds: 1), () {
+            navigateToCreatePage();
+          });
+        },
+        error: (error, stack) {
+          matchResult.value = MatchDebateResult.failed;
+          print(error);
+          print(stack);
+        },
+        loading: () {
+          matchLoading.value = true;
+        },
+      );
+      return null;
+    }, [matchResultAsync]);
 
-      // 清理函数，类似于componentWillUnmount
-      return () {
-        timer.ignore();
-      };
-    }, []); // 空依赖数组，表示只在组件挂载时执行一次
+    void retryMatching() {
+      matchResult.value = null;
+      matchLoading.value = false;
+      progressController.reset();
+      progressController.forward();
+      // ignore: unused_result
+      ref.refresh(matchDebateProvider);
+    }
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -130,7 +150,9 @@ class MatchPage extends HookWidget {
                                 angle:
                                     -reverseSpinController.value * 2 * math.pi,
                                 child: CustomPaint(
-                                  painter: ArcPainter(),
+                                  painter: ArcPainter(
+                                    reverseSpinController.value,
+                                  ),
                                   size: const Size(140, 140),
                                 ),
                               );
@@ -170,28 +192,47 @@ class MatchPage extends HookWidget {
                       ),
 
                       // 匹配成功动画
-                      ScaleTransition(
-                        scale: successController,
-                        child: FadeTransition(
-                          opacity: successController,
-                          child: const Center(
-                            child: Text(
-                              "✓",
-                              style: TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFFECE65),
-                                shadows: [
-                                  Shadow(
-                                    color: Color(0xFFFECE65),
-                                    blurRadius: 15,
-                                  ),
-                                ],
+                      if (matchResult.value == MatchDebateResult.success)
+                        ScaleTransition(
+                          scale: successController,
+                          child: FadeTransition(
+                            opacity: successController,
+                            child: const Center(
+                              child: Text(
+                                "✓",
+                                style: TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFFECE65),
+                                  shadows: [
+                                    Shadow(
+                                      color: Color(0xFFFECE65),
+                                      blurRadius: 15,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
+
+                      if (matchResult.value == MatchDebateResult.failed)
+                        const Center(
+                          child: Text(
+                            "✗",
+                            style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.red,
+                                  blurRadius: 15,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -200,8 +241,17 @@ class MatchPage extends HookWidget {
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: Text(
-                    matchSuccess.value ? '发现强劲的对手！' : '正在寻找对手...',
-                    key: ValueKey<bool>(matchSuccess.value),
+                    matchResult.value == MatchDebateResult.success
+                        ? '发现强劲的对手！'
+                        : matchResult.value == MatchDebateResult.failed
+                            ? '匹配失败，请重试'
+                            : '正在寻找对手...',
+                    key: ValueKey<String>(
+                        matchResult.value == MatchDebateResult.success
+                            ? 'success'
+                            : matchResult.value == MatchDebateResult.failed
+                                ? 'failed'
+                                : 'matching'),
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -218,9 +268,11 @@ class MatchPage extends HookWidget {
                       animation: progressController,
                       builder: (context, child) {
                         return LinearProgressIndicator(
-                          value: matchSuccess.value
+                          value: matchResult.value == MatchDebateResult.success
                               ? 1.0
-                              : progressController.value,
+                              : matchResult.value == MatchDebateResult.failed
+                                  ? 0.0
+                                  : progressController.value,
                           color: const Color(0xFF9261A9),
                           backgroundColor: Colors.grey,
                           minHeight: 10,
@@ -246,15 +298,39 @@ class MatchPage extends HookWidget {
                       ),
                     );
                   },
-                  child: Text(
-                    matchSuccess.value ? '🎉匹配成功！' : '匹配中...',
-                    key: ValueKey<bool>(matchSuccess.value),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFFFECE65),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: matchResult.value == MatchDebateResult.failed
+                      ? Column(
+                          children: [
+                            const SizedBox(height: 10),
+                            ElevatedButton(
+                              onPressed: () {
+                                retryMatching();
+                              },
+                              child: const Text(
+                                '重试',
+                                key: ValueKey<String>('failed'),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          matchResult.value == MatchDebateResult.success
+                              ? '🎉匹配成功！'
+                              : '匹配中...',
+                          key: ValueKey<String>(
+                              matchResult.value == MatchDebateResult.success
+                                  ? 'success'
+                                  : 'matching'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFFFECE65),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ],
             ),
@@ -262,72 +338,5 @@ class MatchPage extends HookWidget {
         ],
       ),
     );
-  }
-}
-
-// 弧线绘制器
-class ArcPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = const Color(0xFFFECE65)
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-
-    final Rect rect = Rect.fromLTWH(0, 0, size.width, size.height);
-
-    // 画一个180度的弧线（半圆）
-    canvas.drawArc(
-      rect,
-      0, // 起始角度
-      math.pi, // 180度弧线
-      false, // 不填充
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// 粒子特效绘制器
-class ParticlesPainter extends CustomPainter {
-  final double animationValue;
-  final Random random = Random();
-
-  ParticlesPainter(this.animationValue);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const int particleCount = 20;
-
-    for (int i = 0; i < particleCount; i++) {
-      final double offsetX = random.nextDouble() * size.width;
-      final double offsetY =
-          (random.nextDouble() * size.height) + (animationValue * size.height);
-      final double modY = offsetY % size.height;
-
-      final double opacity = random.nextDouble() * 0.5;
-      final double particleSize = random.nextDouble() * 3 + 1;
-
-      final Paint paint = Paint()
-        ..color = Color.lerp(
-          const Color(0xFFFECE65),
-          const Color(0xFF9261A9),
-          random.nextDouble(),
-        )!
-            .withOpacity(opacity);
-
-      canvas.drawCircle(
-        Offset(offsetX, modY),
-        particleSize,
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant ParticlesPainter oldDelegate) {
-    return animationValue != oldDelegate.animationValue;
   }
 }

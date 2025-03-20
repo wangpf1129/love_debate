@@ -17,14 +17,21 @@ Future<List<DebateRecord>> fetchDebateRecords(Ref ref) async {
   return listResponse.data;
 }
 
+// 匹配
+@riverpod
+Future<MatchDebate> matchDebate(Ref ref) async {
+  final response = await HttpServer().get('/match');
+  return BaseResponse.fromJson(response,
+      (json) => MatchDebate.fromJson(json as Map<String, dynamic>)).data;
+}
+
 // ai搜索列表
 @riverpod
 Future<List<Bot>> fetchBots(Ref ref, String? keyword) async {
   final response = await HttpServer().get('/bots/search?keyword=$keyword');
 
-  final listResponse = ListResponse<Bot>.fromJson(
+  return ListResponse<Bot>.fromJson(
     response,
     (json) => Bot.fromJson(json as Map<String, dynamic>),
-  );
-  return listResponse.data;
+  ).data;
 }
