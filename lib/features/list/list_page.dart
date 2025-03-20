@@ -3,6 +3,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:love_debate/features/create/create_page.dart';
 import 'package:love_debate/features/match/match_page.dart';
+import 'package:love_debate/features/result/result_page.dart';
 import 'package:love_debate/models/index.dart';
 import 'package:love_debate/providers/api_providers.dart';
 import 'package:love_debate/widgets/primary_button.dart';
@@ -78,11 +79,13 @@ class ListPage extends ConsumerWidget {
                       break;
                     case DebateState.finished:
                     case DebateState.grading:
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //       builder: (context) => const GradingPage()),
-                      // );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => ResultPage(
+                                  debateId: record.id,
+                                )),
+                      );
                       break;
                     case DebateState.preparing:
                       Navigator.push(

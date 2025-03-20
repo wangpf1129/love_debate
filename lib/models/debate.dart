@@ -76,7 +76,7 @@ sealed class DebateItem with _$DebateItem {
     @JsonKey(name: 'pros_energies') required int prosEnergies,
     @JsonKey(name: 'cons_energies') required int consEnergies,
     @JsonKey(name: 'result_text') required String resultText,
-    required String result,
+    required DebateResult result,
   }) = _DebateItem;
 
   factory DebateItem.fromJson(Map<String, dynamic> json) =>
@@ -100,7 +100,7 @@ sealed class DebateRecord with _$DebateRecord {
     @JsonKey(name: 'pros_energies') required int prosEnergies,
     @JsonKey(name: 'cons_energies') required int consEnergies,
     @JsonKey(name: 'result_text') String? resultText,
-    @JsonKey(name: 'result') required DebateResult result,
+    required DebateResult result,
   }) = _DebateRecord;
 
   factory DebateRecord.fromJson(Map<String, dynamic> json) =>
