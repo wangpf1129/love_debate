@@ -44,10 +44,13 @@ class MatchPage extends HookConsumerWidget {
     final matchLoading = useState(false);
 
     // 导航到创建页面的函数
-    void navigateToCreatePage() {
+    void navigateToCreatePage(String debateId) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const CreatePage()),
+        MaterialPageRoute(
+            builder: (context) => CreatePage(
+                  debateId: debateId,
+                )),
       );
     }
 
@@ -61,13 +64,11 @@ class MatchPage extends HookConsumerWidget {
           successController.forward();
 
           Future.delayed(const Duration(seconds: 1), () {
-            navigateToCreatePage();
+            navigateToCreatePage(data.id);
           });
         },
         error: (error, stack) {
           matchResult.value = MatchDebateResult.failed;
-          print(error);
-          print(stack);
         },
         loading: () {
           matchLoading.value = true;

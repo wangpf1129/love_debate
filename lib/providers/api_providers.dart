@@ -35,3 +35,12 @@ Future<List<Bot>> fetchBots(Ref ref, String? keyword) async {
     (json) => Bot.fromJson(json as Map<String, dynamic>),
   ).data;
 }
+
+// 获取辩论详情
+@riverpod
+Future<DebateItem> fetchDebateDetail(Ref ref, String debateId) async {
+  final response = await HttpServer().get('/fight/$debateId');
+  return BaseResponse.fromJson(
+          response, (json) => DebateItem.fromJson(json as Map<String, dynamic>))
+      .data;
+}
