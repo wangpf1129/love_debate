@@ -2,42 +2,80 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:love_debate/features/create/widgets/search_bots_dialog.dart';
 import 'package:love_debate/features/create/widgets/strategy_dialog.dart';
+import 'package:love_debate/models/debate.dart';
 import 'package:love_debate/widgets/custom_app_bar.dart';
 import 'package:love_debate/widgets/primary_button.dart';
 
 class CreatePage extends HookWidget {
   const CreatePage({super.key});
 
-  void _showStrategyDialog(
-      BuildContext context, ValueNotifier<String> strategyState) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StrategyDialog(
-          initialStrategy: strategyState.value,
-          onStrategyChanged: (strategy) {
-            strategyState.value = strategy;
-            print('===== 状态已更新 =====');
-            print('更新后的值: ${strategyState.value}');
-            print('=====================');
-          },
-        );
-      },
-    );
-  }
-
-  void _showSearchBotsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return const SearchBotsDialog();
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final strategyState = useState('');
+    final selectedBots = useState<List<Bot>>(List.filled(4, Bot.empty()));
+    final selectedIndex = useState<int?>(-1);
+
+    bool hasBotAt(int index) {
+      return index < selectedBots.value.length &&
+          selectedBots.value[index].botId != '';
+    }
+
+    void showStrategyDialog(
+        BuildContext context, ValueNotifier<String> strategyState) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return StrategyDialog(
+            initialStrategy: strategyState.value,
+            onStrategyChanged: (strategy) {
+              strategyState.value = strategy;
+            },
+          );
+        },
+      );
+    }
+
+    void showSearchBotsDialog(BuildContext context, int position) {
+      if (position < 0 || position >= 4) {
+        // 表示没有位置可以添加辩手, 如果有空位置，默认添加到第一个空位置
+        position = selectedBots.value.indexWhere((bot) => bot.botId == '') != -1
+            ? selectedBots.value.indexWhere((bot) => bot.botId == '')
+            : 0;
+      }
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          return SearchBotsDialog(
+            onBotSelected: (bot) {
+              final newBots = List<Bot>.from(selectedBots.value);
+              newBots[position] = bot;
+              selectedBots.value = newBots;
+              selectedIndex.value = -1;
+            },
+          );
+        },
+      );
+    }
+
+    void handleBoxTap(BuildContext context, int index) {
+      if (hasBotAt(index)) {
+        if (selectedIndex.value == index) {
+          selectedIndex.value = -1;
+        } else {
+          selectedIndex.value = index;
+        }
+      } else {
+        showSearchBotsDialog(context, index);
+      }
+    }
+
+    void removeBot(int index) {
+      final newBots = List<Bot>.from(selectedBots.value);
+      newBots[index] = Bot.empty();
+      selectedBots.value = newBots;
+      selectedIndex.value = -1;
+    }
 
     return Scaffold(
       appBar: CustomAppBar(onBackPressed: () {
@@ -139,36 +177,36 @@ class CreatePage extends HookWidget {
               ),
               const SizedBox(height: 50),
               Container(
-                width: double.infinity,
+                width: MediaQuery.of(context).size.width * 0.96,
                 height: 300,
                 decoration: const BoxDecoration(
                   image: DecorationImage(
                     image: AssetImage('assets/images/create_modal_bg.png'),
                     fit: BoxFit.contain,
-                    alignment: Alignment.topCenter,
+                    alignment: Alignment.center,
                   ),
                 ),
                 child: Column(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      padding: const EdgeInsets.only(left: 10, top: 4),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           RichText(
-                            text: const TextSpan(
-                              style: TextStyle(color: Colors.white),
+                            text: TextSpan(
+                              style: const TextStyle(color: Colors.white),
                               children: [
-                                TextSpan(
+                                const TextSpan(
                                   text: '选择你的辩手',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                TextSpan(text: ''),
+                                const TextSpan(text: ''),
                                 TextSpan(
-                                  text: '（1/4）',
-                                  style: TextStyle(
+                                  text: '（${selectedBots.value.length}/4）',
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -177,8 +215,7 @@ class CreatePage extends HookWidget {
                           ),
                           IconButton(
                             onPressed: () {
-                              print('===== 搜索辩手 =====');
-                              _showSearchBotsDialog(context);
+                              showSearchBotsDialog(context, -1);
                             },
                             icon: const Icon(
                               Icons.add_circle_outline,
@@ -207,22 +244,102 @@ class CreatePage extends HookWidget {
                       ),
                     ])),
                     const SizedBox(height: 16),
-                    // 需要水平有4个装头像的相框，69*100  相框之间有10的间距
                     Row(
                       spacing: 12,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(
                         4,
-                        (index) => Container(
-                          width: 69,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1A121F),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                                color: Colors.white.withAlpha(20), width: 2),
-                          ),
-                        ),
+                        (index) {
+                          final hasBot = hasBotAt(index);
+                          final isSelected = selectedIndex.value == index;
+
+                          return GestureDetector(
+                            onTap: () => handleBoxTap(context, index),
+                            child: Stack(
+                              children: [
+                                Container(
+                                  width: 69,
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1A121F),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color(0xFF9261A9) // 选中时紫色边框
+                                          : Colors.white
+                                              .withAlpha(20), // 未选中时浅色边框
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                  ),
+                                  child: hasBot
+                                      ? ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          child: Image.network(
+                                            selectedBots.value[index].botAvatar,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stack) {
+                                              return Container(
+                                                color: Colors.grey.shade800,
+                                                child: const Icon(Icons.person,
+                                                    size: 24,
+                                                    color: Colors.white),
+                                              );
+                                            },
+                                          ),
+                                        )
+                                      : const Center(
+                                          child: Icon(
+                                            Icons.add_circle_outline,
+                                            color: Color(0xFF9261A9),
+                                            size: 24,
+                                          ),
+                                        ),
+                                ),
+                                Positioned(
+                                  top: 4,
+                                  left: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.5),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      '${index + 1}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected && hasBot)
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: GestureDetector(
+                                      onTap: () => removeBot(index),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black45,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.close,
+                                          size: 14,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -238,7 +355,7 @@ class CreatePage extends HookWidget {
                         ),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(2), // 两层边框之间的间距
+                        padding: const EdgeInsets.all(2),
                         child: Container(
                           decoration: BoxDecoration(
                             color: const Color(0xFF2a252d),
@@ -250,7 +367,7 @@ class CreatePage extends HookWidget {
                           ),
                           child: MaterialButton(
                             onPressed: () {
-                              _showStrategyDialog(context, strategyState);
+                              showStrategyDialog(context, strategyState);
                             },
                             child: const Text(
                               '设置辩论策略（进阶）',
@@ -271,8 +388,9 @@ class CreatePage extends HookWidget {
                   text: '准备完毕',
                   onPressed: () {
                     print('===== 准备完毕 =====');
+                    print(selectedBots.value);
+                    print(strategyState.value);
                   }),
-              // const SizedBox(height: 320), // 增加高度避免重叠
             ],
           ),
           Positioned(

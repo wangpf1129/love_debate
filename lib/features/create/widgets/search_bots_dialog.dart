@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:love_debate/models/debate.dart';
 import 'package:love_debate/providers/api_providers.dart';
 import 'package:love_debate/widgets/primary_button.dart';
 
 class SearchBotsDialog extends HookConsumerWidget {
+  final Function(Bot) onBotSelected;
   const SearchBotsDialog({
     super.key,
+    required this.onBotSelected,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final searchController = useTextEditingController();
     final query = useState('');
+    // 选中状态
+    final selectedBot = useState<Bot?>(null);
 
     useEffect(() {
       void listener() {
@@ -107,6 +113,7 @@ class SearchBotsDialog extends HookConsumerWidget {
                   ),
                   data: (bots) {
                     if (bots.isEmpty) {
+                      selectedBot.value = null;
                       return const Center(
                         child: Text('没有找到辩手',
                             style: TextStyle(color: Colors.white70)),
@@ -116,55 +123,74 @@ class SearchBotsDialog extends HookConsumerWidget {
                       padding: const EdgeInsets.all(8),
                       itemCount: bots.length,
                       itemBuilder: (context, index) {
-                        return Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 14),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  bots[index].botAvatar,
-                                  width: 40,
-                                  height: 40,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stack) {
-                                    return Container(
-                                      width: 40,
-                                      height: 40,
-                                      color: Colors.grey.shade800,
-                                      child: const Icon(Icons.person,
-                                          size: 20, color: Colors.white),
-                                    );
-                                  },
-                                ),
+                        final bot = bots[index];
+                        return GestureDetector(
+                          onTap: () {
+                            // 如果再次点击同一个辩手，则取消选中
+                            if (selectedBot.value == bot) {
+                              selectedBot.value = null;
+                            } else {
+                              selectedBot.value = bot;
+                            }
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: selectedBot.value == bot
+                                    ? const Color(0xFF8a63a6)
+                                    : Colors.transparent,
+                                width: 2,
                               ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(bots[index].botName,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.bold)),
-                                      const SizedBox(height: 4),
-                                      Text(bots[index].botDescription,
-                                          style: const TextStyle(fontSize: 12),
-                                          overflow: TextOverflow.ellipsis),
-                                    ],
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 10, horizontal: 14),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    bot.botAvatar,
+                                    width: 40,
+                                    height: 40,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stack) {
+                                      return Container(
+                                        width: 40,
+                                        height: 40,
+                                        color: Colors.grey.shade800,
+                                        child: const Icon(Icons.person,
+                                            size: 20, color: Colors.white),
+                                      );
+                                    },
                                   ),
                                 ),
-                              ),
-                            ],
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(bot.botName,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold)),
+                                        const SizedBox(height: 4),
+                                        Text(bot.botDescription,
+                                            style:
+                                                const TextStyle(fontSize: 12),
+                                            overflow: TextOverflow.ellipsis),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -179,7 +205,19 @@ class SearchBotsDialog extends HookConsumerWidget {
                 child: PrimaryButton(
                   text: '确定',
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    if (selectedBot.value == null) {
+                      Fluttertoast.showToast(
+                        msg: '请选择辩手',
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.CENTER,
+                        timeInSecForIosWeb: 1,
+                        textColor: Colors.white,
+                        fontSize: 16.0,
+                      );
+                    } else {
+                      onBotSelected(selectedBot.value!);
+                      Navigator.of(context).pop();
+                    }
                   },
                 ),
               ),

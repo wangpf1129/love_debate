@@ -14,6 +14,15 @@ sealed class Bot with _$Bot {
   }) = _Bot;
 
   factory Bot.fromJson(Map<String, dynamic> json) => _$BotFromJson(json);
+
+  factory Bot.empty() {
+    return const Bot(
+      botId: '',
+      botName: '',
+      botDescription: '',
+      botAvatar: '',
+    );
+  }
 }
 
 @freezed
