@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:love_debate/features/create/widgets/search_bots_dialog.dart';
 import 'package:love_debate/features/create/widgets/strategy_dialog.dart';
 import 'package:love_debate/widgets/custom_app_bar.dart';
 import 'package:love_debate/widgets/primary_button.dart';
@@ -7,7 +8,8 @@ import 'package:love_debate/widgets/primary_button.dart';
 class CreatePage extends HookWidget {
   const CreatePage({super.key});
 
-  void _showDialog(BuildContext context, ValueNotifier<String> strategyState) {
+  void _showStrategyDialog(
+      BuildContext context, ValueNotifier<String> strategyState) {
     showDialog(
       context: context,
       builder: (context) {
@@ -20,6 +22,15 @@ class CreatePage extends HookWidget {
             print('=====================');
           },
         );
+      },
+    );
+  }
+
+  void _showSearchBotsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return const SearchBotsDialog();
       },
     );
   }
@@ -140,8 +151,7 @@ class CreatePage extends HookWidget {
                 child: Column(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -165,11 +175,17 @@ class CreatePage extends HookWidget {
                               ],
                             ),
                           ),
-                          const Icon(
-                            Icons.add_circle_outline,
-                            color: Color(0xFF9261A9),
-                            size: 22,
-                          )
+                          IconButton(
+                            onPressed: () {
+                              print('===== 搜索辩手 =====');
+                              _showSearchBotsDialog(context);
+                            },
+                            icon: const Icon(
+                              Icons.add_circle_outline,
+                              color: Color(0xFF9261A9),
+                              size: 22,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -234,7 +250,7 @@ class CreatePage extends HookWidget {
                           ),
                           child: MaterialButton(
                             onPressed: () {
-                              _showDialog(context, strategyState);
+                              _showStrategyDialog(context, strategyState);
                             },
                             child: const Text(
                               '设置辩论策略（进阶）',

@@ -19,8 +19,8 @@ Future<List<DebateRecord>> fetchDebateRecords(Ref ref) async {
 
 // ai搜索列表
 @riverpod
-Future<List<Bot>> fetchBots(Ref ref) async {
-  final response = await HttpServer().get('/bots/search');
+Future<List<Bot>> fetchBots(Ref ref, String? keyword) async {
+  final response = await HttpServer().get('/bots/search?keyword=$keyword');
 
   final listResponse = ListResponse<Bot>.fromJson(
     response,
