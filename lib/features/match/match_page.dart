@@ -1,105 +1,70 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:love_debate/features/create/create_page.dart';
 import 'dart:math' as math;
 import 'dart:math';
 
 import 'package:love_debate/widgets/custom_app_bar.dart';
 
-class MatchPage extends StatefulWidget {
+class MatchPage extends HookWidget {
   const MatchPage({super.key});
 
   @override
-  State<MatchPage> createState() => _MatchPageState();
-}
-
-class _MatchPageState extends State<MatchPage> with TickerProviderStateMixin {
-  late AnimationController _spinController;
-  late AnimationController _reverseSpinController;
-  late AnimationController _pulseController;
-  late AnimationController _successController;
-  late AnimationController _progressController;
-  late AnimationController _particleController;
-
-  bool matchSuccess = false;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // 外层粒子环旋转动画
-    _spinController = AnimationController(
+  Widget build(BuildContext context) {
+    // 使用hooks创建动画控制器
+    final spinController = useAnimationController(
       duration: const Duration(seconds: 8),
-      vsync: this,
     )..repeat();
 
-    // 内层环反向旋转动画
-    _reverseSpinController = AnimationController(
+    final reverseSpinController = useAnimationController(
       duration: const Duration(seconds: 5),
-      vsync: this,
     )..repeat();
 
-    // 中心脉冲点动画
-    _pulseController = AnimationController(
+    final pulseController = useAnimationController(
       duration: const Duration(seconds: 2),
-      vsync: this,
     )..repeat(reverse: true);
 
-    // 匹配成功动画
-    _successController = AnimationController(
+    final successController = useAnimationController(
       duration: const Duration(milliseconds: 500),
-      vsync: this,
     );
 
-    // 进度条动画控制器 - 持续5秒，与匹配成功时间一致
-    _progressController = AnimationController(
+    final progressController = useAnimationController(
       duration: const Duration(seconds: 5),
-      vsync: this,
-    )..forward(); // 立即开始进度动画
+    )..forward();
 
-    // 粒子动画控制器
-    _particleController = AnimationController(
+    final particleController = useAnimationController(
       duration: const Duration(seconds: 3),
-      vsync: this,
     )..repeat();
 
-    // 模拟5秒后匹配成功
-    Future.delayed(const Duration(seconds: 5), () {
-      if (mounted) {
-        setState(() {
-          matchSuccess = true;
-        });
-        _successController.forward();
+    // 使用useState代替状态变量
+    final matchSuccess = useState(false);
+
+    // 导航到创建页面的函数
+    void navigateToCreatePage() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CreatePage()),
+      );
+    }
+
+    // 使用useEffect处理副作用，类似于componentDidMount和componentWillUnmount
+    useEffect(() {
+      // 模拟5秒后匹配成功
+      final timer = Future.delayed(const Duration(seconds: 5), () {
+        matchSuccess.value = true;
+        successController.forward();
 
         Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) {
-            _navigateToCreatePage();
-          }
+          navigateToCreatePage();
         });
-      }
-    });
-  }
+      });
 
-  @override
-  void dispose() {
-    _spinController.dispose();
-    _reverseSpinController.dispose();
-    _pulseController.dispose();
-    _successController.dispose();
-    _progressController.dispose();
-    _particleController.dispose();
-    super.dispose();
-  }
+      // 清理函数，类似于componentWillUnmount
+      return () {
+        timer.ignore();
+      };
+    }, []); // 空依赖数组，表示只在组件挂载时执行一次
 
-  // 匹配成功后自动跳转到 create_page
-  void _navigateToCreatePage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const CreatePage()),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
         onBackPressed: () {
@@ -111,10 +76,10 @@ class _MatchPageState extends State<MatchPage> with TickerProviderStateMixin {
           // 背景粒子特效
           Positioned.fill(
             child: AnimatedBuilder(
-              animation: _particleController,
+              animation: particleController,
               builder: (context, child) {
                 return CustomPaint(
-                  painter: ParticlesPainter(_particleController.value),
+                  painter: ParticlesPainter(particleController.value),
                 );
               },
             ),
@@ -131,10 +96,10 @@ class _MatchPageState extends State<MatchPage> with TickerProviderStateMixin {
                     children: [
                       // 外层粒子环
                       AnimatedBuilder(
-                        animation: _spinController,
+                        animation: spinController,
                         builder: (context, child) {
                           return Transform.rotate(
-                            angle: _spinController.value * 2 * math.pi,
+                            angle: spinController.value * 2 * math.pi,
                             child: Container(
                               decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
@@ -154,16 +119,16 @@ class _MatchPageState extends State<MatchPage> with TickerProviderStateMixin {
                         },
                       ),
 
-                      // 内层旋转环 - 重构为单一黄色线
+                      // 内层旋转环
                       Positioned.fill(
                         child: Padding(
                           padding: const EdgeInsets.all(30),
                           child: AnimatedBuilder(
-                            animation: _reverseSpinController,
+                            animation: reverseSpinController,
                             builder: (context, child) {
                               return Transform.rotate(
                                 angle:
-                                    -_reverseSpinController.value * 2 * math.pi,
+                                    -reverseSpinController.value * 2 * math.pi,
                                 child: CustomPaint(
                                   painter: ArcPainter(),
                                   size: const Size(140, 140),
@@ -179,7 +144,7 @@ class _MatchPageState extends State<MatchPage> with TickerProviderStateMixin {
                         child: Padding(
                           padding: const EdgeInsets.all(70),
                           child: AnimatedBuilder(
-                            animation: _pulseController,
+                            animation: pulseController,
                             builder: (context, child) {
                               return Container(
                                 decoration: BoxDecoration(
@@ -188,15 +153,13 @@ class _MatchPageState extends State<MatchPage> with TickerProviderStateMixin {
                                   boxShadow: [
                                     BoxShadow(
                                       color: const Color(0xFFFECE65).withAlpha(
-                                          ((0.5 +
-                                                      _pulseController.value *
-                                                          0.5) *
+                                          ((0.5 + pulseController.value * 0.5) *
                                                   255)
                                               .round()),
                                       blurRadius:
-                                          10 + _pulseController.value * 10,
+                                          10 + pulseController.value * 10,
                                       spreadRadius:
-                                          2 + _pulseController.value * 2,
+                                          2 + pulseController.value * 2,
                                     ),
                                   ],
                                 ),
@@ -208,9 +171,9 @@ class _MatchPageState extends State<MatchPage> with TickerProviderStateMixin {
 
                       // 匹配成功动画
                       ScaleTransition(
-                        scale: _successController,
+                        scale: successController,
                         child: FadeTransition(
-                          opacity: _successController,
+                          opacity: successController,
                           child: const Center(
                             child: Text(
                               "✓",
@@ -237,8 +200,8 @@ class _MatchPageState extends State<MatchPage> with TickerProviderStateMixin {
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: Text(
-                    matchSuccess ? '发现强劲的对手！' : '正在寻找对手...',
-                    key: ValueKey<bool>(matchSuccess),
+                    matchSuccess.value ? '发现强劲的对手！' : '正在寻找对手...',
+                    key: ValueKey<bool>(matchSuccess.value),
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -252,10 +215,12 @@ class _MatchPageState extends State<MatchPage> with TickerProviderStateMixin {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: AnimatedBuilder(
-                      animation: _progressController,
+                      animation: progressController,
                       builder: (context, child) {
                         return LinearProgressIndicator(
-                          value: matchSuccess ? 1.0 : _progressController.value,
+                          value: matchSuccess.value
+                              ? 1.0
+                              : progressController.value,
                           color: const Color(0xFF9261A9),
                           backgroundColor: Colors.grey,
                           minHeight: 10,
@@ -282,8 +247,8 @@ class _MatchPageState extends State<MatchPage> with TickerProviderStateMixin {
                     );
                   },
                   child: Text(
-                    matchSuccess ? '🎉匹配成功！' : '匹配中...',
-                    key: ValueKey<bool>(matchSuccess),
+                    matchSuccess.value ? '🎉匹配成功！' : '匹配中...',
+                    key: ValueKey<bool>(matchSuccess.value),
                     style: const TextStyle(
                       fontSize: 16,
                       color: Color(0xFFFECE65),
