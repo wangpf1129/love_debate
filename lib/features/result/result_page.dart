@@ -260,6 +260,7 @@ class ResultPage extends HookConsumerWidget {
                           vertical: 10, horizontal: 14),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
