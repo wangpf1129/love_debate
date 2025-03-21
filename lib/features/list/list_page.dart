@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:love_debate/features/create/create_page.dart';
+import 'package:love_debate/features/detail/detail_page.dart';
 import 'package:love_debate/features/match/match_page.dart';
 import 'package:love_debate/features/result/result_page.dart';
 import 'package:love_debate/models/index.dart';
@@ -92,7 +92,8 @@ class ListPage extends ConsumerWidget {
                         context,
                         MaterialPageRoute(
                             builder: (context) =>
-                                CreatePage(debateId: record.id)),
+                                // CreatePage(debateId: record.id)),
+                                DetailPage(debateId: record.id)),
                       );
                       break;
                     default:
