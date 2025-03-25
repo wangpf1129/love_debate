@@ -1,3 +1,5 @@
+import 'dart:math' as Math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -37,6 +39,8 @@ class DetailPage extends HookConsumerWidget {
     final currentRound = useState(1);
     final isPolling = useState(false);
     final roundData = useState<DebateRound?>(null);
+    final tempContent = useState<String?>(null);
+    final isProcessing = useState(false);
 
     // 计算下一回合
     int getNextRound(int current, int maxRound) {
@@ -47,14 +51,14 @@ class DetailPage extends HookConsumerWidget {
       if (debateDetailAsync.value == null || roundData.value == null) {
         return null;
       }
-      return DebaterDetail(
-        bot: debateDetailAsync.value?.my.standpoint == DebateStandpoint.pros
-            ? debateDetailAsync.value?.my.bots[0]
-            : debateDetailAsync.value?.opponent.bots[0],
-        content: roundData.value?.content ?? '',
-        standpoint: roundData.value?.standpoint ?? DebateStandpoint.pros,
-        sort: roundData.value?.bot.sort ?? 1,
-        energies: roundData.value?.energies ?? 50,
+
+      // 应该直接使用roundData中的bot
+      return (
+        bot: roundData.value!.bot,
+        content: roundData.value!.content,
+        standpoint: roundData.value!.standpoint,
+        sort: roundData.value!.bot.sort,
+        energies: roundData.value!.energies,
       );
     }, [debateDetailAsync.value, roundData.value]);
 
@@ -76,8 +80,22 @@ class DetailPage extends HookConsumerWidget {
                   fetchDebateRoundProvider(debateId: debateId, round: nextRound)
                       .future);
 
-              // 更新回合数据
+              // 检查roundDetailAsync是否为null（表示"发言中"状态）
+              if (roundDetailAsync == null) {
+                // 创建临时内容显示"发言中"
+                // 注意：我们不更新roundData.value，而是创建一个临时显示状态
+                tempContent.value = "正在思考中...";
+                isProcessing.value = true;
+
+                // 较短延迟后继续轮询
+                Future.delayed(const Duration(seconds: 2), startPolling);
+                return;
+              }
+
+              // 正常情况，更新回合数据
               roundData.value = roundDetailAsync;
+              tempContent.value = null; // 清除临时内容
+              isProcessing.value = false; // 清除处理中状态
 
               // 检查所有三个条件：state为fighting、回合数小于8、content非空
               final bool isFighting =
@@ -93,11 +111,25 @@ class DetailPage extends HookConsumerWidget {
                 if (notMaxRounds) {
                   // 更新下一回合
                   nextRound = getNextRound(nextRound, 8);
+
+                  // 动态计算下一次轮询间隔（从UniApp逻辑借鉴）
+                  final contentLength = roundDetailAsync.content.length;
+                  int delay = 5000; // 基础间隔5秒
+
+                  // 根据内容长度调整间隔：每100字增加2秒
+                  delay +=
+                      Math.min(10000, (contentLength / 100).floor() * 2000);
+
                   // 延迟后再次轮询
-                  Future.delayed(const Duration(seconds: 5), startPolling);
+                  Future.delayed(Duration(milliseconds: delay), startPolling);
                 } else {
                   // 达到最大回合，停止轮询
                   isPolling.value = false;
+
+                  // 最终回合，刷新辩论详情
+                  if (nextRound == 8) {
+                    ref.invalidate(fetchDebateDetailProvider(debateId));
+                  }
                 }
               } else if (isFighting && notMaxRounds) {
                 // 仍在战斗状态但内容尚未更新，继续轮询
@@ -107,6 +139,7 @@ class DetailPage extends HookConsumerWidget {
                 isPolling.value = false;
               }
             } catch (e) {
+              print('轮询错误: $e');
               // 出错时短暂延迟后重试
               Future.delayed(const Duration(seconds: 3), startPolling);
             }
@@ -206,7 +239,7 @@ class DetailPage extends HookConsumerWidget {
                                           ),
                                         ),
                                       ),
-                                      if (currentDebater?.bot?.botId ==
+                                      if (currentDebater?.bot.botId ==
                                           debateDetail
                                               .opponent.bots[index].botId)
                                         Positioned(
@@ -389,12 +422,14 @@ class DetailPage extends HookConsumerWidget {
                                     child: ClipRRect(
                                         borderRadius: BorderRadius.circular(5),
                                         child: Image.network(
-                                          currentDebater.bot!.botAvatar,
+                                          currentDebater.bot.botAvatar,
                                           fit: BoxFit.cover,
                                         )),
                                   ),
                                   const SizedBox(width: 10),
                                   Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Container(
                                         padding: const EdgeInsets.symmetric(
@@ -405,7 +440,7 @@ class DetailPage extends HookConsumerWidget {
                                               BorderRadius.circular(16),
                                         ),
                                         child: Text(
-                                          currentDebaterColors.label,
+                                          '${currentDebaterColors.label} ${currentDebater.sort}辩',
                                           style: const TextStyle(
                                             color: Colors.black,
                                             fontWeight: FontWeight.bold,
@@ -414,12 +449,17 @@ class DetailPage extends HookConsumerWidget {
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      Text(
-                                        currentDebater.bot!.botName,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
+                                      SizedBox(
+                                        width: 100,
+                                        child: Text(
+                                          currentDebater.bot.botName,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          maxLines: 1,
                                         ),
                                       ),
                                     ],
@@ -470,14 +510,43 @@ class DetailPage extends HookConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          currentDebater.content,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
+                        if (isProcessing.value) // 处理"发言中"状态
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                tempContent.value ?? "正在思考中...",
+                                style: TextStyle(
+                                  color: Colors.grey[400],
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "💡 对方正在组织语言，请稍候",
+                                style: TextStyle(
+                                  color: Colors.grey[500],
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          )
+                        else if (roundData.value != null) // 正常内容
+                          Text(
+                            roundData.value!.content,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          )
+                        else // 等待开始
+                          const Text(
+                            "等待辩论开始...",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
                           ),
-                        ),
-                        // 可以显示更多组合数据字段
                       ],
                     ),
                   ),
@@ -557,7 +626,7 @@ class DetailPage extends HookConsumerWidget {
                               ),
                             ),
                           ),
-                          if (currentDebater?.bot?.botId ==
+                          if (currentDebater?.bot.botId ==
                               debateDetail.my.bots[index].botId)
                             Positioned(
                               top: 0,

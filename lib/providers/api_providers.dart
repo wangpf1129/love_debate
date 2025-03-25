@@ -47,12 +47,28 @@ Future<DebateItem> fetchDebateDetail(Ref ref, String debateId) async {
 
 // 获取辩论回合的详情
 @riverpod
-Future<DebateRound> fetchDebateRound(
+Future<DebateRound?> fetchDebateRound(
   Ref ref, {
   required String debateId,
   required int round,
 }) async {
-  final response = await HttpServer().get('/fight/$debateId/deliver/$round');
-  return BaseResponse.fromJson(response,
-      (json) => DebateRound.fromJson(json as Map<String, dynamic>)).data;
+  try {
+    final response = await HttpServer().get('/fight/$debateId/deliver/$round');
+
+    // 检查特殊情况：code=200 且 data=null
+    if (response['code'] == 200 && response['data'] == null) {
+      return null;
+    }
+
+    // 正常情况：解析数据
+    final baseResponse = BaseResponse.fromJson(
+        response,
+        (json) => json == null
+            ? null
+            : DebateRound.fromJson(json as Map<String, dynamic>));
+
+    return baseResponse.data;
+  } catch (e) {
+    return null;
+  }
 }
