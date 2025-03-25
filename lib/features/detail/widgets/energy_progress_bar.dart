@@ -20,6 +20,11 @@ class EnergyProgressBar extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    useEffect(() {
+      print(
+          'EnergyProgressBar rebuild - myEnergy: $myEnergy, opponentEnergy: $opponentEnergy');
+      return null;
+    }, [myEnergy, opponentEnergy]);
     // 使用 hooks 创建和管理动画控制器
     final animationController = useAnimationController(
       duration: animationDuration,

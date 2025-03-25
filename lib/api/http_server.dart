@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'dart:convert'; // 添加这个导入
 
 class HttpServer {
@@ -21,13 +20,13 @@ class HttpServer {
       },
     ));
 
-    // 添加日志拦截器
-    _dio.interceptors.add(PrettyDioLogger(
-        requestHeader: true, // 请求头
-        requestBody: true, // 请求体
-        responseBody: true, // 响应体
-        responseHeader: false, // 响应头
-        compact: false)); // 是否压缩
+    // // 添加日志拦截器
+    // _dio.interceptors.add(PrettyDioLogger(
+    //     requestHeader: true, // 请求头
+    //     requestBody: true, // 请求体
+    //     responseBody: true, // 响应体
+    //     responseHeader: false, // 响应头
+    //     compact: false)); // 是否压缩
 
     // 添加自定义拦截器
     _dio.interceptors.add(InterceptorsWrapper(

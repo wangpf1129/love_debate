@@ -263,19 +263,14 @@ class ListPage extends ConsumerWidget {
                                       Text(
                                         record.resultText ?? '',
                                         style: TextStyle(
-                                          color: record.state ==
-                                                      DebateState.fighting ||
-                                                  record.state ==
-                                                      DebateState.grading
-                                              ? (record.winnerUserId ==
-                                                      record.my.userId
-                                                  ? const Color(0xFFfece65)
-                                                  : const Color(0xFF8a63a6))
-                                              : record.state ==
-                                                      DebateState.fighting
-                                                  ? const Color(0xFF525252)
-                                                  : record.state ==
-                                                          DebateState.preparing
+                                          color: record.result ==
+                                                  DebateResult.win
+                                              ? const Color(0xFFfece65)
+                                              : record.result ==
+                                                      DebateResult.lose
+                                                  ? const Color(0xFF8a63a6)
+                                                  : record.result ==
+                                                          DebateResult.fighting
                                                       ? const Color(0xFF2196f3)
                                                       : const Color(0xFF999999),
                                         ),

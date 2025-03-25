@@ -5,6 +5,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:love_debate/features/detail/widgets/energy_progress_bar.dart';
 import 'package:love_debate/features/detail/widgets/info_drawer.dart';
+import 'package:love_debate/features/result/result_page.dart';
 import 'package:love_debate/hooks/use_debate_colors.dart';
 import 'package:love_debate/models/debate.dart';
 import 'package:love_debate/models/enums.dart';
@@ -27,6 +28,13 @@ class DebaterDetail {
   });
 }
 
+class Energy {
+  final int my;
+  final int opponent;
+
+  Energy({required this.my, required this.opponent});
+}
+
 class DetailPage extends HookConsumerWidget {
   final String debateId;
   const DetailPage({super.key, required this.debateId});
@@ -41,6 +49,8 @@ class DetailPage extends HookConsumerWidget {
     final roundData = useState<DebateRound?>(null);
     final tempContent = useState<String?>(null);
     final isProcessing = useState(false);
+
+    final energy = useState(Energy(my: 50, opponent: 50));
 
     // 计算下一回合
     int getNextRound(int current, int maxRound) {
@@ -58,7 +68,7 @@ class DetailPage extends HookConsumerWidget {
         content: roundData.value!.content,
         standpoint: roundData.value!.standpoint,
         sort: roundData.value!.bot.sort,
-        energies: roundData.value!.energies,
+        energies: roundData.value?.energies ?? 50,
       );
     }, [debateDetailAsync.value, roundData.value]);
 
@@ -69,25 +79,27 @@ class DetailPage extends HookConsumerWidget {
         final detail = debateDetailAsync.value!;
         currentRound.value = detail.rounds;
 
-        // 确保不超过最大回合数（8）
         if (currentRound.value <= 8) {
           int nextRound = getNextRound(currentRound.value, 8);
-          // 启动轮询
+
+          // 创建一个标志来跟踪组件是否已销毁
+          bool isDisposed = false;
+
           void startPolling() async {
+            // 如果组件已销毁，不继续轮询
+            if (isDisposed) return;
+
             try {
-              // 获取下一回合详情
               final roundDetailAsync = await ref.read(
                   fetchDebateRoundProvider(debateId: debateId, round: nextRound)
                       .future);
 
-              // 检查roundDetailAsync是否为null（表示"发言中"状态）
+              // 再次检查组件是否已销毁
+              if (isDisposed) return;
+
               if (roundDetailAsync == null) {
-                // 创建临时内容显示"发言中"
-                // 注意：我们不更新roundData.value，而是创建一个临时显示状态
                 tempContent.value = "正在思考中...";
                 isProcessing.value = true;
-
-                // 较短延迟后继续轮询
                 Future.delayed(const Duration(seconds: 2), startPolling);
                 return;
               }
@@ -104,49 +116,87 @@ class DetailPage extends HookConsumerWidget {
               final bool notMaxRounds = nextRound < 8;
 
               if (isFighting && hasContent) {
-                // 内容已更新且仍在战斗状态，可以进入下一回合
                 currentRound.value = nextRound;
-
-                // 如果未达到最大回合，设置下一次轮询
                 if (notMaxRounds) {
-                  // 更新下一回合
                   nextRound = getNextRound(nextRound, 8);
-
-                  // 动态计算下一次轮询间隔（从UniApp逻辑借鉴）
                   final contentLength = roundDetailAsync.content.length;
-                  int delay = 5000; // 基础间隔5秒
-
-                  // 根据内容长度调整间隔：每100字增加2秒
+                  int delay = 5000;
                   delay +=
                       Math.min(10000, (contentLength / 100).floor() * 2000);
 
-                  // 延迟后再次轮询
-                  Future.delayed(Duration(milliseconds: delay), startPolling);
+                  // 延迟前检查组件是否已销毁
+                  if (!isDisposed) {
+                    Future.delayed(Duration(milliseconds: delay), startPolling);
+                  }
                 } else {
                   // 达到最大回合，停止轮询
                   isPolling.value = false;
 
-                  // 最终回合，刷新辩论详情
-                  if (nextRound == 8) {
-                    ref.invalidate(fetchDebateDetailProvider(debateId));
+                  // 刷新辩论详情并等待新状态
+                  final refreshedDetail = await ref
+                      .refresh(fetchDebateDetailProvider(debateId).future);
+                  // 如果状态已更新为已完成，停止轮询
+                  if (refreshedDetail.state == DebateState.finished ||
+                      refreshedDetail.state == DebateState.grading) {
+                    isPolling.value = false;
+                  }
+                }
+
+                if (roundData.value != null && currentDebater != null) {
+                  // 确保所有需要的值都存在
+                  final myStandpoint = debateDetailAsync.value?.my.standpoint;
+                  final currentStandpoint = currentDebater.standpoint;
+
+                  if (myStandpoint != null) {
+                    final newMyEnergy = myStandpoint == currentStandpoint
+                        ? currentDebater.energies
+                        : (100 - currentDebater.energies);
+
+                    // 只有当能量值真正发生变化时才更新
+                    if (energy.value.my != newMyEnergy) {
+                      print(
+                          'Energy updating - Old: ${energy.value.my}, New: $newMyEnergy');
+                      energy.value = Energy(
+                        my: newMyEnergy,
+                        opponent: 100 - newMyEnergy,
+                      );
+                    }
                   }
                 }
               } else if (isFighting && notMaxRounds) {
-                // 仍在战斗状态但内容尚未更新，继续轮询
-                Future.delayed(const Duration(seconds: 2), startPolling);
+                if (!isDisposed) {
+                  Future.delayed(const Duration(seconds: 2), startPolling);
+                }
               } else {
                 // 战斗已结束或达到最大回合数，停止轮询
                 isPolling.value = false;
+
+                // 获取并使用刷新后的状态
+                final refreshedDetail = await ref
+                    .refresh(fetchDebateDetailProvider(debateId).future);
+                if (refreshedDetail.state == DebateState.finished ||
+                    refreshedDetail.state == DebateState.grading) {
+                  // 可以在这里处理辩论结束的逻辑
+                  isPolling.value = false;
+                }
               }
             } catch (e) {
               print('轮询错误: $e');
-              // 出错时短暂延迟后重试
-              Future.delayed(const Duration(seconds: 3), startPolling);
+              if (!isDisposed) {
+                Future.delayed(const Duration(seconds: 3), startPolling);
+              }
             }
           }
 
-          // 开始轮询
           startPolling();
+
+          // 清理函数
+          return () {
+            isDisposed = true; // 标记组件已销毁
+            isPolling.value = false;
+            tempContent.value = null;
+            isProcessing.value = false;
+          };
         }
       }
 
@@ -377,8 +427,8 @@ class DetailPage extends HookConsumerWidget {
                                 child: SizedBox(
                                   height: 10,
                                   child: EnergyProgressBar(
-                                    myEnergy: 0.7, // 我方占比
-                                    opponentEnergy: 0.3, // 对方占比
+                                    myEnergy: energy.value.my / 100,
+                                    opponentEnergy: energy.value.opponent / 100,
                                     myColor: myColors.mainColor, // 我方颜色
                                     opponentColor:
                                         opponentColors.mainColor, // 对方颜色
@@ -574,6 +624,19 @@ class DetailPage extends HookConsumerWidget {
                 ],
 
                 const SizedBox(height: 20),
+                if (debateDetail.state == DebateState.finished)
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ResultPage(debateId: debateId),
+                        ),
+                      );
+                    },
+                    child: const Text('查看结果'),
+                  ),
+
                 InfoDrawer(
                   title: debateDetail.themeTitle,
                   standpointText: debateDetail.my.standpointView,

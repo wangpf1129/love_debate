@@ -112,7 +112,7 @@ class CreatePage extends HookConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('创建成功')),
           );
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => DetailPage(debateId: debateId),
