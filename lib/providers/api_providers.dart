@@ -36,6 +36,14 @@ Future<List<Bot>> fetchBots(Ref ref, String? keyword) async {
   ).data;
 }
 
+// 提交辩论
+@riverpod
+Future<dynamic> createDebate(
+    Ref ref, String debateId, CreatePayload payload) async {
+  final response = await HttpServer().post('/$debateId/prepare', data: payload);
+  return BaseResponse.fromJson(response, (json) => json).data;
+}
+
 // 获取辩论详情
 @riverpod
 Future<DebateItem> fetchDebateDetail(Ref ref, String debateId) async {

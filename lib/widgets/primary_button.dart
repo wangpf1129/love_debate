@@ -4,18 +4,20 @@ class PrimaryButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
   final double fontSize;
+  final bool loading;
 
   const PrimaryButton({
     super.key,
     required this.text,
     required this.onPressed,
     this.fontSize = 18,
+    this.loading = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: onPressed,
+      onPressed: loading ? null : onPressed,
       style: ButtonStyle(
         padding: WidgetStateProperty.all<EdgeInsetsGeometry>(
             const EdgeInsets.all(6)),
@@ -39,14 +41,23 @@ class PrimaryButton extends StatelessWidget {
             colors: [Color(0xFF9261A9), Color(0xFF743790)],
           ),
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: fontSize,
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        child: loading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                text,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ),
     );
   }

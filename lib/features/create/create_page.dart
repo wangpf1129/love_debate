@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:love_debate/features/create/widgets/search_bots_dialog.dart';
 import 'package:love_debate/features/create/widgets/strategy_dialog.dart';
+import 'package:love_debate/features/detail/detail_page.dart';
 import 'package:love_debate/models/debate.dart';
 import 'package:love_debate/models/enums.dart';
 import 'package:love_debate/providers/api_providers.dart';
@@ -81,6 +83,46 @@ class CreatePage extends HookConsumerWidget {
       newBots[index] = Bot.empty();
       selectedBots.value = newBots;
       selectedIndex.value = -1;
+    }
+
+    final pendingCreateDebate = useState<Future<void>?>(null);
+    final createDebateSnapshot = useFuture(pendingCreateDebate.value);
+    handleCreateButtonTapped() {
+      if (selectedBots.value.where((bot) => bot.botId != '').length < 4) {
+        Fluttertoast.showToast(msg: '请选择至少4个辩手');
+        return;
+      }
+      final payload = CreatePayload(
+        bots: selectedBots.value.asMap().entries.map((entry) {
+          final index = entry.key; // 获取位置索引 (0-3)
+          final bot = entry.value;
+          return BotPayload(
+            botId: bot.botId,
+            botName: bot.botName,
+            sort: index + 1, // 将位置索引+1作为sort值传给接口
+          );
+        }).toList(),
+        tactics: strategyState.value,
+      );
+
+      pendingCreateDebate.value = ref
+          .read(createDebateProvider(debateId, payload).future)
+          .then((value) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('创建成功')),
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetailPage(debateId: debateId),
+            ),
+          );
+        }
+      }).catchError((error) {
+        Fluttertoast.showToast(msg: error.toString());
+        throw error; // 重新抛出错误以更新 snapshot 状态
+      });
     }
 
     return Scaffold(
@@ -400,11 +442,9 @@ class CreatePage extends HookConsumerWidget {
                   ),
                   PrimaryButton(
                       text: '准备完毕',
-                      onPressed: () {
-                        print('===== 准备完毕 =====');
-                        print(selectedBots.value);
-                        print(strategyState.value);
-                      }),
+                      loading: createDebateSnapshot.connectionState ==
+                          ConnectionState.waiting,
+                      onPressed: () => handleCreateButtonTapped()),
                 ],
               ),
               Positioned(

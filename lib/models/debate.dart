@@ -166,3 +166,26 @@ sealed class DebateRound with _$DebateRound {
   factory DebateRound.fromJson(Map<String, dynamic> json) =>
       _$DebateRoundFromJson(json);
 }
+
+@freezed
+sealed class BotPayload with _$BotPayload {
+  const factory BotPayload({
+    @JsonKey(name: 'bot_id') required String botId,
+    @JsonKey(name: 'bot_name') required String botName,
+    required int sort,
+  }) = _BotPayload;
+
+  factory BotPayload.fromJson(Map<String, dynamic> json) =>
+      _$BotPayloadFromJson(json);
+}
+
+@freezed
+sealed class CreatePayload with _$CreatePayload {
+  const factory CreatePayload({
+    required String tactics,
+    required List<BotPayload> bots,
+  }) = _CreatePayload;
+
+  factory CreatePayload.fromJson(Map<String, dynamic> json) =>
+      _$CreatePayloadFromJson(json);
+}

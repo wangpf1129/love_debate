@@ -21,7 +21,11 @@ enum DebateResult {
   @JsonValue('lose')
   lose, // 失败
   @JsonValue('preparing')
-  preparing; // 准备中
+  preparing, // 准备中
+  @JsonValue('fighting')
+  fighting, // 战斗中
+  @JsonValue('grading')
+  grading, // 评分中
 }
 
 // 立场枚举
