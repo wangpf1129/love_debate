@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:love_debate/features/create/create_page.dart';
 import 'package:love_debate/features/detail/detail_page.dart';
 import 'package:love_debate/features/match/match_page.dart';
-import 'package:love_debate/features/result/result_page.dart';
 import 'package:love_debate/models/index.dart';
 import 'package:love_debate/providers/api_providers.dart';
 import 'package:love_debate/widgets/primary_button.dart';
@@ -71,18 +71,24 @@ class ListPage extends ConsumerWidget {
                   // 根据record的状态来决定跳转到哪个页面
                   switch (record.state) {
                     case DebateState.fighting:
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //       builder: (context) => const FightingPage()),
-                      // );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => DetailPage(
+                                  debateId: record.id,
+                                )),
+                      );
                       break;
                     case DebateState.finished:
                     case DebateState.grading:
                       Navigator.push(
                         context,
+                        // MaterialPageRoute(
+                        //     builder: (context) => ResultPage(
+                        //           debateId: record.id,
+                        //         )),
                         MaterialPageRoute(
-                            builder: (context) => ResultPage(
+                            builder: (context) => DetailPage(
                                   debateId: record.id,
                                 )),
                       );
@@ -92,8 +98,7 @@ class ListPage extends ConsumerWidget {
                         context,
                         MaterialPageRoute(
                             builder: (context) =>
-                                // CreatePage(debateId: record.id)),
-                                DetailPage(debateId: record.id)),
+                                CreatePage(debateId: record.id)),
                       );
                       break;
                     default:

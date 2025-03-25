@@ -44,3 +44,15 @@ Future<DebateItem> fetchDebateDetail(Ref ref, String debateId) async {
           response, (json) => DebateItem.fromJson(json as Map<String, dynamic>))
       .data;
 }
+
+// 获取辩论回合的详情
+@riverpod
+Future<DebateRound> fetchDebateRound(
+  Ref ref, {
+  required String debateId,
+  required int round,
+}) async {
+  final response = await HttpServer().get('/fight/$debateId/deliver/$round');
+  return BaseResponse.fromJson(response,
+      (json) => DebateRound.fromJson(json as Map<String, dynamic>)).data;
+}

@@ -124,3 +124,45 @@ sealed class MatchDebate with _$MatchDebate {
   factory MatchDebate.fromJson(Map<String, dynamic> json) =>
       _$MatchDebateFromJson(json);
 }
+
+@freezed
+sealed class BotWithSort with _$BotWithSort {
+  const factory BotWithSort({
+    required int sort,
+    @JsonKey(name: 'bot_id') required String botId,
+    @JsonKey(name: 'bot_name') required String botName,
+    @JsonKey(name: 'bot_avatar') required String botAvatar,
+    @JsonKey(name: 'bot_description') required String botDescription,
+  }) = _BotWithSort;
+
+  factory BotWithSort.fromJson(Map<String, dynamic> json) =>
+      _$BotWithSortFromJson(json);
+
+  factory BotWithSort.empty() {
+    return const BotWithSort(
+      sort: 0,
+      botId: '',
+      botName: '',
+      botAvatar: '',
+      botDescription: '',
+    );
+  }
+}
+
+@freezed
+sealed class DebateRound with _$DebateRound {
+  const factory DebateRound({
+    required String id,
+    @JsonKey(name: 'fight_id') required String fightId,
+    @JsonKey(name: 'bot_id') required String botId,
+    @JsonKey(name: 'content') required String content,
+    @JsonKey(name: 'created_at') required String createdAt,
+    @JsonKey(name: 'rounds') required int rounds,
+    @JsonKey(name: 'energies') required int energies,
+    @JsonKey(name: 'standpoint') required DebateStandpoint standpoint,
+    @JsonKey(name: 'bot') required BotWithSort bot,
+  }) = _DebateRound;
+
+  factory DebateRound.fromJson(Map<String, dynamic> json) =>
+      _$DebateRoundFromJson(json);
+}
