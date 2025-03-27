@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-class InfoDrawer extends HookWidget {
+class InfoDrawer extends HookConsumerWidget {
   // 标题和立场
   final String title;
   final String standpointText;
+  final Function onEscapeButtonTapped;
   const InfoDrawer({
     super.key,
     required this.title,
     required this.standpointText,
+    required this.onEscapeButtonTapped,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDrawerExpanded = useState(false);
+
     return // 抽屉容器
         Align(
       alignment: Alignment.centerRight,
@@ -92,7 +96,9 @@ class InfoDrawer extends HookWidget {
                                 ],
                               ),
                               ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  onEscapeButtonTapped();
+                                },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor:
                                       const Color(0xFF9261A9).withOpacity(0.1),

@@ -109,9 +109,7 @@ class CreatePage extends HookConsumerWidget {
           .read(createDebateProvider(debateId, payload).future)
           .then((value) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('创建成功')),
-          );
+          Fluttertoast.showToast(msg: '创建成功');
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(

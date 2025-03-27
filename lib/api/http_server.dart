@@ -120,6 +120,17 @@ class HttpServer {
             onReceiveProgress: onReceiveProgress,
           );
           break;
+        case 'PATCH':
+          response = await _dio.patch(
+            path,
+            data: data,
+            queryParameters: queryParameters,
+            options: options,
+            cancelToken: cancelToken,
+            onSendProgress: onSendProgress,
+            onReceiveProgress: onReceiveProgress,
+          );
+          break;
         case 'PUT':
           response = await _dio.put(
             path,
@@ -183,6 +194,28 @@ class HttpServer {
     return _request(
       path,
       'POST',
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+  }
+
+  // patch
+  Future<Map<String, dynamic>> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    return _request(
+      path,
+      'PATCH',
       data: data,
       queryParameters: queryParameters,
       options: options,

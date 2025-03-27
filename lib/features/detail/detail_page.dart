@@ -2,9 +2,11 @@ import 'dart:math' as Math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:love_debate/features/detail/widgets/energy_progress_bar.dart';
 import 'package:love_debate/features/detail/widgets/info_drawer.dart';
+import 'package:love_debate/features/list/list_page.dart';
 import 'package:love_debate/features/result/result_page.dart';
 import 'package:love_debate/hooks/use_debate_colors.dart';
 import 'package:love_debate/models/debate.dart';
@@ -87,6 +89,7 @@ class DetailPage extends HookConsumerWidget {
           void startPolling() async {
             // 如果组件已销毁，不继续轮询
             if (isDisposed) return;
+            print('开始轮询详情');
 
             try {
               final roundDetailAsync = await ref.read(
@@ -191,8 +194,6 @@ class DetailPage extends HookConsumerWidget {
           return () {
             isDisposed = true; // 标记组件已销毁
             isPolling.value = false;
-            tempContent.value = null;
-            isProcessing.value = false;
           };
         }
       }
@@ -201,6 +202,46 @@ class DetailPage extends HookConsumerWidget {
         isPolling.value = false;
       };
     }, [debateDetailAsync.value]);
+
+    handleEscapeDebate() {
+      // 二次确认弹窗，点击确认就调逃跑接口
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('确认逃跑'),
+          content: const Text('确定要退出当前辩论吗？'),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                // 停止轮询
+                isPolling.value = false;
+                try {
+                  await ref.read(escapeDebateProvider(debateId).future);
+                  print('逃跑成功');
+
+                  if (context.mounted) {
+                    // 逃跑成功后就返回首页
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const ListPage()),
+                      (route) => false,
+                    );
+                  }
+                } catch (error) {
+                  Fluttertoast.showToast(msg: error.toString());
+                }
+              },
+              child: const Text('确认'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('取消'),
+            ),
+          ],
+        ),
+      );
+    }
 
     return debateDetailAsync.when(
       loading: () => const Scaffold(
@@ -638,6 +679,7 @@ class DetailPage extends HookConsumerWidget {
                 InfoDrawer(
                   title: debateDetail.themeTitle,
                   standpointText: debateDetail.my.standpointView,
+                  onEscapeButtonTapped: handleEscapeDebate,
                 ),
               ],
             ),
