@@ -62,7 +62,6 @@ class DetailPage extends HookConsumerWidget {
         return null;
       }
 
-      // 应该直接使用roundData中的bot
       return (
         bot: roundData.value!.bot,
         content: roundData.value!.content,
@@ -104,6 +103,26 @@ class DetailPage extends HookConsumerWidget {
                 return;
               }
 
+              // 更新能量值
+              if (roundData.value != null) {
+                final myStandpoint = debateDetailAsync.value?.my.standpoint;
+                final currentStandpoint = roundData.value!.standpoint;
+                final currentEnergies = roundData.value!.energies;
+
+                if (myStandpoint != null) {
+                  final newMyEnergy = myStandpoint == currentStandpoint
+                      ? currentEnergies
+                      : (100 - currentEnergies);
+
+                  if (energy.value.my != newMyEnergy) {
+                    energy.value = Energy(
+                      my: newMyEnergy,
+                      opponent: 100 - newMyEnergy,
+                    );
+                  }
+                }
+              }
+
               // 正常情况，更新回合数据
               roundData.value = roundDetailAsync;
               tempContent.value = null; // 清除临时内容
@@ -139,28 +158,6 @@ class DetailPage extends HookConsumerWidget {
                   if (refreshedDetail.state == DebateState.finished ||
                       refreshedDetail.state == DebateState.grading) {
                     isPolling.value = false;
-                  }
-                }
-
-                if (roundData.value != null && currentDebater != null) {
-                  // 确保所有需要的值都存在
-                  final myStandpoint = debateDetailAsync.value?.my.standpoint;
-                  final currentStandpoint = currentDebater.standpoint;
-
-                  if (myStandpoint != null) {
-                    final newMyEnergy = myStandpoint == currentStandpoint
-                        ? currentDebater.energies
-                        : (100 - currentDebater.energies);
-
-                    // 只有当能量值真正发生变化时才更新
-                    if (energy.value.my != newMyEnergy) {
-                      print(
-                          'Energy updating - Old: ${energy.value.my}, New: $newMyEnergy');
-                      energy.value = Energy(
-                        my: newMyEnergy,
-                        opponent: 100 - newMyEnergy,
-                      );
-                    }
                   }
                 }
               } else if (isFighting && notMaxRounds) {
@@ -624,7 +621,8 @@ class DetailPage extends HookConsumerWidget {
                 ],
 
                 const SizedBox(height: 20),
-                if (debateDetail.state == DebateState.finished)
+                if (debateDetail.state == DebateState.finished ||
+                    debateDetail.state == DebateState.grading)
                   ElevatedButton(
                     onPressed: () {
                       Navigator.push(
