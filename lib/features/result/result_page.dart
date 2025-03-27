@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:love_debate/models/index.dart';
 import 'package:love_debate/providers/api_providers.dart';
@@ -15,6 +18,19 @@ class ResultPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final debateDetailAsync = ref.watch(fetchDebateDetailProvider(debateId));
+    useEffect(() {
+      final timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+        if (context.mounted) {
+          if (debateDetailAsync.value != null &&
+              debateDetailAsync.value!.state == DebateState.grading) {
+            ref.invalidate(fetchDebateDetailProvider(debateId));
+          } else {
+            timer.cancel();
+          }
+        }
+      });
+      return timer.cancel;
+    }, []);
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -23,7 +39,11 @@ class ResultPage extends HookConsumerWidget {
         },
       ),
       body: debateDetailAsync.when(
-        error: (error, stack) => const Center(child: Text('加载失败')),
+        error: (error, stack) {
+          print(error);
+          print(stack);
+          return const Center(child: Text('加载失败'));
+        },
         loading: () => const Center(child: CircularProgressIndicator()),
         data: (debateDetail) {
           return Column(
@@ -86,7 +106,9 @@ class ResultPage extends HookConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      debateDetail.resultText,
+                      debateDetail.state == DebateState.grading
+                          ? '正在评分...'
+                          : debateDetail.resultText,
                       style: TextStyle(
                         color: debateDetail.result == DebateResult.win
                             ? const Color(0xFFFECE65)
@@ -290,7 +312,10 @@ class ResultPage extends HookConsumerWidget {
                                   Text(judge.botName,
                                       style: const TextStyle(
                                           fontWeight: FontWeight.bold)),
-                                  Text(judge.content ?? '',
+                                  Text(
+                                      debateDetail.state == DebateState.grading
+                                          ? '裁判正在评分中，请稍候...'
+                                          : judge.content ?? '',
                                       style: const TextStyle(fontSize: 14)),
                                 ],
                               ),
