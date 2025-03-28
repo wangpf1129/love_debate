@@ -130,11 +130,13 @@ class ListPage extends ConsumerWidget {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
+                              Flexible(
+                                  child: Text(
                                 record.themeTitle,
                                 style: const TextStyle(
                                     fontSize: 12, fontWeight: FontWeight.w600),
-                              ),
+                                overflow: TextOverflow.ellipsis,
+                              )),
                               Text(
                                 '你的观点：${record.my.standpointView}',
                                 style: const TextStyle(
