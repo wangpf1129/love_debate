@@ -46,7 +46,8 @@ Future<dynamic> createDebate(
 
 // 获取辩论详情
 @riverpod
-Future<DebateItem> fetchDebateDetail(Ref ref, String debateId) async {
+Future<DebateItem> fetchDebateDetail(Ref ref, String debateId,
+    {String? keyname}) async {
   final response = await HttpServer().get('/fight/$debateId');
   return BaseResponse.fromJson(
           response, (json) => DebateItem.fromJson(json as Map<String, dynamic>))

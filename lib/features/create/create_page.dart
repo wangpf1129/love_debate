@@ -17,7 +17,8 @@ class CreatePage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final debateDetailAsync = ref.watch(fetchDebateDetailProvider(debateId));
+    final debateDetailAsync =
+        ref.watch(fetchDebateDetailProvider(debateId, keyname: 'create_page'));
 
     final strategyState = useState('');
     final selectedBots = useState<List<Bot>>(List.filled(4, Bot.empty()));

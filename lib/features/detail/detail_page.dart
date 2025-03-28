@@ -43,7 +43,8 @@ class DetailPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final debateDetailAsync = ref.watch(fetchDebateDetailProvider(debateId));
+    final debateDetailAsync =
+        ref.watch(fetchDebateDetailProvider(debateId, keyname: 'detail_page'));
 
     // 使用useState管理当前回合和轮询状态
     final currentRound = useState(1);
@@ -86,10 +87,9 @@ class DetailPage extends HookConsumerWidget {
           // 创建一个标志来跟踪组件是否已销毁
           bool isDisposed = false;
 
-          void startPolling() async {
+          startPolling() async {
             // 如果组件已销毁，不继续轮询
             if (isDisposed) return;
-            print('开始轮询详情');
 
             try {
               final roundDetailAsync = await ref.read(

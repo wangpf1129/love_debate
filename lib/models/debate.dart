@@ -52,7 +52,7 @@ sealed class Debater with _$Debater {
     @JsonKey(name: 'is_escape') required int isEscape,
     @JsonKey(name: 'created_at') required String createdAt,
     @JsonKey(name: 'is_ready') required int isReady,
-    @Default([]) List<Bot> bots,
+    @JsonKey(name: 'bots') required List<Bot> bots,
   }) = _Debater;
 
   factory Debater.fromJson(Map<String, dynamic> json) =>
