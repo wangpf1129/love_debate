@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:love_debate/features/home/home_page.dart';
+import 'package:love_debate/routers/app_route.dart';
 
 void main() {
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  MyApp({super.key});
+
+  final _appRouter = AppRouter();
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
+      routerConfig: _appRouter.config(),
       title: '恋与辩论赛',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -20,7 +24,6 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const MyHomePage(),
     );
   }
 }

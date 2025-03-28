@@ -1,16 +1,18 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:love_debate/features/create/widgets/search_bots_dialog.dart';
 import 'package:love_debate/features/create/widgets/strategy_dialog.dart';
-import 'package:love_debate/features/detail/detail_page.dart';
 import 'package:love_debate/models/debate.dart';
 import 'package:love_debate/models/enums.dart';
 import 'package:love_debate/providers/api_providers.dart';
+import 'package:love_debate/routers/app_route.gr.dart';
 import 'package:love_debate/widgets/custom_app_bar.dart';
 import 'package:love_debate/widgets/primary_button.dart';
 
+@RoutePage()
 class CreatePage extends HookConsumerWidget {
   final String debateId;
   const CreatePage({super.key, required this.debateId});
@@ -111,12 +113,7 @@ class CreatePage extends HookConsumerWidget {
           .then((value) {
         if (context.mounted) {
           Fluttertoast.showToast(msg: '创建成功');
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DetailPage(debateId: debateId),
-            ),
-          );
+          context.router.replace(DetailRoute(debateId: debateId));
         }
       }).catchError((error) {
         Fluttertoast.showToast(msg: error.toString());
@@ -127,7 +124,7 @@ class CreatePage extends HookConsumerWidget {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: CustomAppBar(onBackPressed: () {
-        Navigator.pop(context);
+        context.router.popUntil(ModalRoute.withName(ListRoute.name));
       }),
       body: Stack(
         children: [

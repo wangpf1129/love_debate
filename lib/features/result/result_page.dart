@@ -1,12 +1,15 @@
 import 'dart:async';
 
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:love_debate/models/index.dart';
 import 'package:love_debate/providers/api_providers.dart';
+import 'package:love_debate/routers/app_route.gr.dart';
 import 'package:love_debate/widgets/custom_app_bar.dart';
 
+@RoutePage()
 class ResultPage extends HookConsumerWidget {
   final String debateId;
   const ResultPage({super.key, required this.debateId});
@@ -38,7 +41,8 @@ class ResultPage extends HookConsumerWidget {
     return Scaffold(
       appBar: CustomAppBar(
         onBackPressed: () {
-          Navigator.pop(context);
+          //  固定返回到列表页
+          context.router.popUntil(ModalRoute.withName(ListRoute.name));
         },
       ),
       body: debateDetailAsync.when(

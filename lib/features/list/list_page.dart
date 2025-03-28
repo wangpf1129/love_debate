@@ -1,14 +1,13 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:love_debate/features/create/create_page.dart';
-import 'package:love_debate/features/detail/detail_page.dart';
-import 'package:love_debate/features/match/match_page.dart';
-import 'package:love_debate/features/result/result_page.dart';
 import 'package:love_debate/models/index.dart';
 import 'package:love_debate/providers/api_providers.dart';
+import 'package:love_debate/routers/app_route.gr.dart';
 import 'package:love_debate/widgets/primary_button.dart';
 
+@RoutePage()
 class ListPage extends ConsumerWidget {
   const ListPage({super.key});
 
@@ -29,7 +28,7 @@ class ListPage extends ConsumerWidget {
                 icon: const Icon(Icons.arrow_back_ios_new),
                 iconSize: 16,
                 onPressed: () {
-                  Navigator.pop(context);
+                  context.router.pop();
                 },
               ),
             )),
@@ -73,31 +72,14 @@ class ListPage extends ConsumerWidget {
                   // 根据record的状态来决定跳转到哪个页面
                   switch (record.state) {
                     case DebateState.fighting:
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => DetailPage(
-                                  debateId: record.id,
-                                )),
-                      );
+                      context.router.push(DetailRoute(debateId: record.id));
                       break;
                     case DebateState.finished:
                     case DebateState.grading:
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => ResultPage(
-                                  debateId: record.id,
-                                )),
-                      );
+                      context.router.push(ResultRoute(debateId: record.id));
                       break;
                     case DebateState.preparing:
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                CreatePage(debateId: record.id)),
-                      );
+                      context.router.push(CreateRoute(debateId: record.id));
                       break;
                     default:
                       Fluttertoast.showToast(
@@ -296,8 +278,7 @@ class ListPage extends ConsumerWidget {
         child: PrimaryButton(
           text: '开始匹配',
           onPressed: () {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => const MatchPage()));
+            context.router.push(const MatchRoute());
           },
         ),
       ),

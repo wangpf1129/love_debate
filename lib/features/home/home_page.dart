@@ -1,6 +1,8 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:love_debate/features/list/list_page.dart';
+import 'package:love_debate/routers/app_route.gr.dart';
 
+@RoutePage()
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -20,8 +22,7 @@ class HomePage extends StatelessWidget {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const ListPage()));
+              context.router.push(const ListRoute());
             },
             style: ButtonStyle(
               padding: WidgetStateProperty.all<EdgeInsetsGeometry>(

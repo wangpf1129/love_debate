@@ -1,17 +1,17 @@
 import 'dart:math' as Math;
 
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:love_debate/features/detail/widgets/energy_progress_bar.dart';
 import 'package:love_debate/features/detail/widgets/info_drawer.dart';
-import 'package:love_debate/features/list/list_page.dart';
-import 'package:love_debate/features/result/result_page.dart';
 import 'package:love_debate/hooks/use_debate_colors.dart';
 import 'package:love_debate/models/debate.dart';
 import 'package:love_debate/models/enums.dart';
 import 'package:love_debate/providers/api_providers.dart';
+import 'package:love_debate/routers/app_route.gr.dart';
 import 'package:love_debate/widgets/custom_app_bar.dart';
 
 class DebaterDetail {
@@ -37,6 +37,7 @@ class Energy {
   Energy({required this.my, required this.opponent});
 }
 
+@RoutePage()
 class DetailPage extends HookConsumerWidget {
   final String debateId;
   const DetailPage({super.key, required this.debateId});
@@ -224,10 +225,8 @@ class DetailPage extends HookConsumerWidget {
 
                   if (context.mounted) {
                     // 逃跑成功后就返回首页
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const ListPage()),
-                      (route) => false,
-                    );
+                    context.router
+                        .popUntil(ModalRoute.withName(ListRoute.name));
                   }
                 } catch (error) {
                   Fluttertoast.showToast(msg: error.toString());
@@ -237,7 +236,7 @@ class DetailPage extends HookConsumerWidget {
             ),
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                context.router.pop();
               },
               child: const Text('取消'),
             ),
@@ -256,7 +255,7 @@ class DetailPage extends HookConsumerWidget {
       ),
       error: (error, stackTrace) => Scaffold(
         appBar: CustomAppBar(onBackPressed: () {
-          Navigator.pop(context);
+          context.router.pop();
         }),
         body: Center(
           child: Text(
@@ -274,7 +273,7 @@ class DetailPage extends HookConsumerWidget {
 
         return Scaffold(
           appBar: CustomAppBar(onBackPressed: () {
-            Navigator.pop(context);
+            context.router.popUntil(ModalRoute.withName(ListRoute.name));
           }),
           body: SingleChildScrollView(
             child: Column(
@@ -669,12 +668,7 @@ class DetailPage extends HookConsumerWidget {
                     debateDetail.state == DebateState.grading)
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ResultPage(debateId: debateId),
-                        ),
-                      );
+                      context.router.push(ResultRoute(debateId: debateId));
                     },
                     child: const Text('查看结果'),
                   ),
