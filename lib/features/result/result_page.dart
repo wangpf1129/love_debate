@@ -17,13 +17,15 @@ class ResultPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final debateDetailAsync = ref.watch(fetchDebateDetailProvider(debateId));
+    final debateDetailAsync =
+        ref.watch(fetchDebateDetailProvider(debateId, keyname: 'result_page'));
     useEffect(() {
       final timer = Timer.periodic(const Duration(seconds: 5), (timer) {
         if (context.mounted) {
           if (debateDetailAsync.value != null &&
               debateDetailAsync.value!.state == DebateState.grading) {
-            ref.invalidate(fetchDebateDetailProvider(debateId));
+            ref.invalidate(
+                fetchDebateDetailProvider(debateId, keyname: 'result_page'));
           } else {
             timer.cancel();
           }

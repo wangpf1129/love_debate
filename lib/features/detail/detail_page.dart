@@ -155,8 +155,10 @@ class DetailPage extends HookConsumerWidget {
                   isPolling.value = false;
 
                   // 刷新辩论详情并等待新状态
-                  final refreshedDetail = await ref
-                      .refresh(fetchDebateDetailProvider(debateId).future);
+                  final refreshedDetail = await ref.refresh(
+                      fetchDebateDetailProvider(debateId,
+                              keyname: 'detail_page')
+                          .future);
                   // 如果状态已更新为已完成，停止轮询
                   if (refreshedDetail.state == DebateState.finished ||
                       refreshedDetail.state == DebateState.grading) {
@@ -172,8 +174,9 @@ class DetailPage extends HookConsumerWidget {
                 isPolling.value = false;
 
                 // 获取并使用刷新后的状态
-                final refreshedDetail = await ref
-                    .refresh(fetchDebateDetailProvider(debateId).future);
+                final refreshedDetail = await ref.refresh(
+                    fetchDebateDetailProvider(debateId, keyname: 'detail_page')
+                        .future);
                 if (refreshedDetail.state == DebateState.finished ||
                     refreshedDetail.state == DebateState.grading) {
                   // 可以在这里处理辩论结束的逻辑
