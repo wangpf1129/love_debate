@@ -88,3 +88,10 @@ Future<dynamic> escapeDebate(Ref ref, String debateId) async {
   final response = await HttpServer().patch('/fight/$debateId/escape');
   return BaseResponse.fromJson(response, (json) => json).data;
 }
+
+// 气势
+@riverpod
+Future<dynamic> getAura(Ref ref, String debateId) async {
+  final response = await HttpServer().patch('/fight/$debateId/strength');
+  return BaseResponse.fromJson(response, (json) => json).data;
+}

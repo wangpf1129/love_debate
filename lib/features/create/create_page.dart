@@ -163,6 +163,7 @@ class CreatePage extends HookConsumerWidget {
                           ),
                         ],
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),

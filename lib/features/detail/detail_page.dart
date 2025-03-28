@@ -59,6 +59,14 @@ class DetailPage extends HookConsumerWidget {
     // 添加一个状态用于跟踪当前显示鼓掌动画的裁判索引（-1表示没有裁判显示动画）
     final clappingJudgeIndex = useState<int>(-1);
 
+    // 添加一个状态用于跟踪火焰动画的显示
+    final showFlameEffect = useState(false);
+    // 添加一个状态用于跟踪是否已点击气势按钮
+    final hasClickedAura = useState(false);
+
+    // 添加一个状态用于记录点击气势时的回合数
+    final auraClickedRound = useState<int>(-1);
+
     // 计算下一回合
     int getNextRound(int current, int maxRound) {
       return current < maxRound ? current + 1 : maxRound;
@@ -97,7 +105,9 @@ class DetailPage extends HookConsumerWidget {
 
     // 当回合变化时触发鼓掌逻辑
     useEffect(() {
-      if (debateDetailAsync.value != null && currentRound.value > 1) {
+      if (debateDetailAsync.value != null &&
+          currentRound.value > 1 &&
+          debateDetailAsync.value!.state == DebateState.fighting) {
         // 只有当回合大于1且有辩论数据时，才计算是否显示鼓掌
         if (roundData.value != null && roundData.value!.content.isNotEmpty) {
           updateClappingJudge(debateDetailAsync.value!.judges.length);
@@ -122,8 +132,8 @@ class DetailPage extends HookConsumerWidget {
     // 使用Lottie替换原有的鼓掌动画小部件
     Widget buildClappingAnimation() {
       return SizedBox(
-        width: 30,
         height: 30,
+        width: 30,
         child: Lottie.asset(
           'assets/animations/clapping.json',
           repeat: true,
@@ -133,7 +143,69 @@ class DetailPage extends HookConsumerWidget {
       );
     }
 
-    // 修改处理轮询逻辑，移除初始加载时的鼓掌判断
+    // 处理气势按钮点击
+    void handleAuraClick() async {
+      // 状态判断
+      if (debateDetailAsync.value?.state != DebateState.fighting) {
+        Fluttertoast.showToast(msg: "该状态无法使用气势");
+        return;
+      }
+
+      if (hasClickedAura.value) {
+        Fluttertoast.showToast(msg: "本场辩论已使用过气势");
+        return;
+      }
+
+      final isLastRound = currentRound.value >= 8;
+      if (isLastRound) {
+        Fluttertoast.showToast(msg: "最后一回合无法使用气势");
+        return;
+      }
+
+      try {
+        await ref.read(getAuraProvider(debateId).future);
+        hasClickedAura.value = true;
+        // 记录点击气势时的回合数
+        auraClickedRound.value = currentRound.value;
+        Fluttertoast.showToast(msg: "气势将在下一回合生效");
+      } catch (error) {
+        Fluttertoast.showToast(msg: error.toString());
+      }
+    }
+
+    // 修改轮询效果，添加火焰动画的控制
+    useEffect(() {
+      // 只在点击气势的下一回合显示火焰动画
+      if (hasClickedAura.value &&
+          !showFlameEffect.value &&
+          currentRound.value == auraClickedRound.value + 1) {
+        showFlameEffect.value = true;
+
+        // 一回合后关闭火焰动画
+        Future.delayed(const Duration(seconds: 3), () {
+          if (context.mounted) {
+            showFlameEffect.value = false;
+          }
+        });
+      }
+      return null;
+    }, [currentRound.value, hasClickedAura.value]);
+
+    // 修改火焰动画组件，根据状态显示
+    Widget buildFlameAnimation() {
+      if (!showFlameEffect.value) return const SizedBox();
+
+      return SizedBox(
+        height: 24,
+        child: Lottie.asset(
+          'assets/animations/flame.json',
+          repeat: true,
+          animate: true,
+          fit: BoxFit.contain,
+        ),
+      );
+    }
+
     useEffect(() {
       if (debateDetailAsync.value != null && !isPolling.value) {
         isPolling.value = true;
@@ -506,41 +578,61 @@ class DetailPage extends HookConsumerWidget {
                       ),
 
                       // 双方气势进度条
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
+                      Container(
+                        margin: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 24),
-                        child: Row(
+                        child: Column(
                           children: [
-                            Text(
-                              '${myColors.label}气势',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(3),
-                                child: SizedBox(
-                                  height: 10,
-                                  child: EnergyProgressBar(
-                                    myEnergy: energy.value.my / 100,
-                                    opponentEnergy: energy.value.opponent / 100,
-                                    myColor: myColors.mainColor, // 我方颜色
-                                    opponentColor:
-                                        opponentColors.mainColor, // 对方颜色
-                                  ),
+                            // 原有的进度条
+                            Stack(
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      '${myColors.label}气势',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(3),
+                                        child: SizedBox(
+                                          height: 10,
+                                          child: EnergyProgressBar(
+                                            myEnergy: energy.value.my / 100,
+                                            opponentEnergy:
+                                                energy.value.opponent / 100,
+                                            myColor: myColors.mainColor,
+                                            opponentColor:
+                                                opponentColors.mainColor,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${opponentColors.label}气势',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${opponentColors.label}气势',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                              ),
+                                Positioned(
+                                  left: 10,
+                                  bottom: 0,
+                                  child: buildFlameAnimation(),
+                                ),
+                                Positioned(
+                                  right: 10,
+                                  bottom: 0,
+                                  child: buildFlameAnimation(),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -840,17 +932,22 @@ class DetailPage extends HookConsumerWidget {
                       ),
                     ),
                     ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          backgroundColor: myColors.mainColor,
+                      onPressed: handleAuraClick,
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
-                          '💪 气势',
-                          style: TextStyle(color: Colors.white),
-                        )),
+                        backgroundColor: myColors.mainColor,
+                        // 根据状态设置不同的透明度
+                        foregroundColor: Colors.white.withOpacity(
+                          0.5,
+                        ),
+                      ),
+                      child: const Text(
+                        '💪 气势',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
                   ],
                 ),
               ],

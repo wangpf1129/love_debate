@@ -77,6 +77,7 @@ class ListPage extends ConsumerWidget {
                     case DebateState.finished:
                     case DebateState.grading:
                       context.router.push(ResultRoute(debateId: record.id));
+                      // context.router.push(DetailRoute(debateId: record.id));
                       break;
                     case DebateState.preparing:
                       context.router.push(CreateRoute(debateId: record.id));
