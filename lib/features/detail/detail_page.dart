@@ -13,6 +13,7 @@ import 'package:love_debate/models/enums.dart';
 import 'package:love_debate/providers/api_providers.dart';
 import 'package:love_debate/routers/app_route.gr.dart';
 import 'package:love_debate/widgets/custom_app_bar.dart';
+import 'package:lottie/lottie.dart';
 
 class DebaterDetail {
   final Bot? bot;
@@ -55,6 +56,8 @@ class DetailPage extends HookConsumerWidget {
     final isProcessing = useState(false);
 
     final energy = useState(Energy(my: 50, opponent: 50));
+    // 添加一个状态用于跟踪当前显示鼓掌动画的裁判索引（-1表示没有裁判显示动画）
+    final clappingJudgeIndex = useState<int>(-1);
 
     // 计算下一回合
     int getNextRound(int current, int maxRound) {
@@ -75,7 +78,62 @@ class DetailPage extends HookConsumerWidget {
       );
     }, [debateDetailAsync.value, roundData.value]);
 
-    // 处理轮询逻辑
+    // 修改函数来根据概率更新鼓掌的裁判，但增加辩论状态检查
+    void updateClappingJudge(int judgesCount) {
+      // 只有在实际有辩论内容时才考虑显示鼓掌动画
+      if (roundData.value != null && roundData.value!.content.isNotEmpty) {
+        // 70%的概率触发鼓掌
+        if (Math.Random().nextDouble() < 0.7 && judgesCount > 0) {
+          // 随机选择一个裁判
+          clappingJudgeIndex.value = Math.Random().nextInt(judgesCount);
+        } else {
+          clappingJudgeIndex.value = -1; // 不显示鼓掌动画
+        }
+      } else {
+        // 没有辩论内容时，不显示鼓掌
+        clappingJudgeIndex.value = -1;
+      }
+    }
+
+    // 当回合变化时触发鼓掌逻辑
+    useEffect(() {
+      if (debateDetailAsync.value != null && currentRound.value > 1) {
+        // 只有当回合大于1且有辩论数据时，才计算是否显示鼓掌
+        if (roundData.value != null && roundData.value!.content.isNotEmpty) {
+          updateClappingJudge(debateDetailAsync.value!.judges.length);
+        }
+      }
+      return null;
+    }, [currentRound.value, roundData.value]);
+
+    // 当clappingJudgeIndex变化时，处理动画显示逻辑
+    useEffect(() {
+      if (clappingJudgeIndex.value >= 0) {
+        // 3秒后重置索引，隐藏动画
+        Future.delayed(const Duration(seconds: 3), () {
+          if (context.mounted) {
+            clappingJudgeIndex.value = -1;
+          }
+        });
+      }
+      return null;
+    }, [clappingJudgeIndex.value]);
+
+    // 使用Lottie替换原有的鼓掌动画小部件
+    Widget buildClappingAnimation() {
+      return SizedBox(
+        width: 30,
+        height: 30,
+        child: Lottie.asset(
+          'assets/animations/clapping.json',
+          repeat: true,
+          animate: true,
+          fit: BoxFit.contain,
+        ),
+      );
+    }
+
+    // 修改处理轮询逻辑，移除初始加载时的鼓掌判断
     useEffect(() {
       if (debateDetailAsync.value != null && !isPolling.value) {
         isPolling.value = true;
@@ -563,22 +621,39 @@ class DetailPage extends HookConsumerWidget {
                             debateDetail.judges.length,
                             (index) => Padding(
                               padding: const EdgeInsets.only(right: 8),
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(5),
-                                  border: Border.all(
-                                      color: Colors.white.withOpacity(0.2),
-                                      width: 2),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(5),
-                                  child: Image.network(
-                                    debateDetail.judges[index].botAvatar,
-                                    fit: BoxFit.cover,
+                              child: Stack(
+                                clipBehavior: Clip.none, // 确保不会被裁剪
+                                children: [
+                                  // 裁判头像容器
+                                  Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(5),
+                                      border: Border.all(
+                                          color: Colors.white.withOpacity(0.2),
+                                          width: 2),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(5),
+                                      child: Image.network(
+                                        debateDetail.judges[index].botAvatar,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
                                   ),
-                                ),
+
+                                  // 裁判鼓掌动画，使用Lottie
+                                  if (clappingJudgeIndex.value == index)
+                                    Positioned(
+                                      top: -12, // 进一步调高位置以适应Lottie动画
+                                      left: -12, // 进一步调左位置
+                                      child: Material(
+                                        type: MaterialType.transparency,
+                                        child: buildClappingAnimation(),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                           ),
